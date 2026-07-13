@@ -13,14 +13,22 @@ Track M work items (cross-cutting; gates nothing in phases 1–4). Program-level
 
 ## M1 — retroactive traceability model (entry increment; zero new experiments)
 
-- [ ] `models/requirements/` — H1–H4 as `requirement` definitions, one per hypothesis,
-      wording lifted verbatim from `docs/ARCHITECTURE.md` §2
-- [ ] `verify` links to the frozen archives (manifest digests as the join key):
-      exp-001 (`e51721c1a5a0…`, H1), exp-002 (`a8aa539dc04a…`, H3), exp-002b
-      (`625840eeeb0c…`, H3 decomposition), exp-003 (`007ffd65472e…`, H4)
-- [ ] Record the second-campaign reproducibility checks as verification evidence
-      attributes (incl. exp-003's honest absolute-drift caveat)
-- [ ] Parse/typing check in CI (textual model must parse clean before merge)
+- [x] `models/requirements/hypotheses.sysml` — H1–H4 as `requirement` definitions,
+      wording verbatim from `docs/ARCHITECTURE.md` §2; `h2` carries an explicit
+      not-yet-verified doc note (phase-2 gate) instead of a fake link (2026-07-13)
+- [x] `models/requirements/verification.sysml` — verification defs `verify`-linked to
+      the archives, full 64-char digests where recoverable: exp-001
+      (`e51721c1a5a0…`, H1), exp-002 (`a8aa539dc04a…`, H3, post-retrofit), exp-002b
+      (`625840eeeb0c…`, H3 decomposition), exp-003 rerun (`5dc4c2a6b860…`, H4).
+      Provenance recorded honestly: exp-003's *original* campaign digest survives only
+      truncated (`007ffd65472e…`) — its archives were overwritten in place by the
+      rerun; exp-002's pre-retrofit digest was superseded by design (2026-07-13)
+- [x] Second-campaign reproducibility checks recorded as `reproCheck` evidence
+      attributes, incl. exp-003's absolute-drift caveat (2026-07-13)
+- [ ] Parse/typing check in CI (textual model must parse clean before merge) — also
+      blocks the local double gate: no SysML v2 toolchain installed on the dev host
+      yet (see M0 toolchain-pinning item); the .sysml files above are authored to the
+      standard textual notation but have NOT yet passed a parser
 
 ## M2 — structure model + renderer
 
