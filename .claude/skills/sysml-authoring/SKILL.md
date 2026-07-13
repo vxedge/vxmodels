@@ -30,6 +30,14 @@ images/node IDs (zone/compute manifests own those — reference them, never rest
   `VxEdge` (the project name is one lowercase word, `vxedge`; only the grammatical
   first letter is capitalized, no invented internal capitals). Examples:
   `VxedgeHypotheses` (package), `H1Isolation` (def), `h1` / `manifestSha256` (usages).
+- **Never name a usage after a SysML v2 keyword.** `frame`, `subject`, `objective`,
+  `variant`, `event`, `snapshot`… — the parser fails with a misleading error anchored
+  at the *preceding* token (found the hard way: `attribute frame : …` broke the whole
+  def body, 2026-07-14). When in doubt, prefix (`campaignFrame`).
+- **Enum defs ARE variations.** Their literals are the variants — type the dimension
+  attribute by the enum directly (`attribute backend : PackagingBackend;`); wrapping it
+  in `variation … { variant … }` is illegal (a variation may not specialize another
+  variation). Reserve explicit `variation`/`variant` for non-enum part/config variants.
 - **One file, one concern**: `models/requirements/`, `models/vehicles/`,
   `models/experiments/`, `models/scenarios/`. A file that mixes a requirement and a
   structure def gets split.

@@ -39,10 +39,16 @@ Track M work items (cross-cutting; gates nothing in phases 1–4). Program-level
 
 ## M2 — structure model + renderer
 
+**Blocked on `vxedge`:** vehicle-manifest structs (§6.2) are still TODO in vxedge-core
+(`vxedge/TASKS.md` §1), so `vxedge manifest validate` cannot validate a rendered vehicle
+manifest — the M2 gate can't run until that phase-1 carryover lands. Structure-model
+authoring can start anytime; the renderer waits.
+
 - [ ] `models/vehicles/vx-vehicle-01.sysml` — zones/nodes as `part` defs, `links`
       harness as `connection`s, slices+QoS as typed `interface`s (§6.2 mirror)
 - [ ] `vxmodel` crate (Rust): `vxmodel render --vehicle <model> --out <manifest.yaml>`,
       embedding the model digest; fails if `vxedge manifest validate --json` rejects
+      *(gate blocked: needs vehicle-manifest structs in vxedge-core first)*
 - [ ] Round-trip check in CI: render → validate → diff against the hand-written
       vx-vehicle-01 manifest once it exists in `vxperiments`
 - [ ] Add rust-patterns skill + standard Rust CI (build/test/clippy/fmt) when the crate
@@ -50,16 +56,26 @@ Track M work items (cross-cutting; gates nothing in phases 1–4). Program-level
 
 ## M3 — analysis cases + variants (GenAI generation target; aligns with phase 2)
 
-- [ ] `models/experiments/` — exp-001/002/002b/003 retro-modeled as `analysis case`s
-      (calibration set), then new experiments authored model-first
-- [ ] Variant points for arms: packaging (container/libvirt/qemu-microvm), slice mode
-      (vlan/s-nssai) — mechanical arm enumeration
+- [x] `models/experiments/phase1-analysis-cases.sysml` (2026-07-14) — exp-001/002/002b/
+      003 retro-modeled as `analysis def`s (calibration set): enumerated dimensions
+      (PackagingBackend/VirtioTransport/QemuMachine/InterferenceSource), shared
+      CampaignFrame, per-campaign varied-vs-fixed structure. Passes the SysIDE gate.
+      Two grammar lessons codified in sysml-authoring: keyword collisions (`frame`),
+      enum-defs-are-variations
+- [ ] New experiments authored model-first (starts with exp-010/H2 — pairs with the
+      phase-2 S-NSSAI driver)
+- [ ] Slice-mode dimension (vlan/s-nssai) joins the calibration set when exp-010's
+      design lands — mechanical arm enumeration over both dimensions
 - [x] `sysml-authoring` skill (`.claude/skills/`): construct mapping, double gate,
       out-of-scope rules — delivered early with the M0 seed (2026-07-13)
 - [ ] First LLM-generated experiment passes both gates and runs end-to-end (documented
       as the paper-#3 pipeline demo)
 
 ## M4 — scenarios + fidelity ledger (aligns with phases 2–3)
+
+**Blocked on `vxcompute`:** scenario models need CARLA actually wired (phase-2 board,
+first code in that repo) before there is anything real to model against; fidelity-ledger
+annotations can start once M2's structure model exists.
 
 - [ ] Scenario models (`use case`/`occurrence`) for CARLA traffic/transportation
       scenarios; mapping table toward ASAM OpenSCENARIO
