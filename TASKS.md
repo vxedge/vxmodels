@@ -8,8 +8,14 @@ Track M work items (cross-cutting; gates nothing in phases 1–4). Program-level
 
 - [x] Repo created + seeded (AGENTS.md, TASKS.md, CHANGELOG.md, README.md,
       testbed-quality skill) — 2026-07-13
-- [ ] Decide and pin the SysML v2 toolchain versions (SysIDE vs pilot implementation;
-      record in `docs/TESTBED-SETUP.md` Tier M once verified)
+- [x] Toolchain pinned (2026-07-13): **SysIDE 0.9.1** (`syside-languageserver.zip`,
+      sha256 `1c3da428…`) as the parse/type gate + **SysML-v2-Release 2026-04**
+      `sysml.library` (sha256 `44996ee2…`) as the standard library — both verified by
+      digest in CI (`.github/workflows/ci.yml`). SysIDE is LSP-only, so
+      `scripts/validate-sysml.mjs` (dependency-free Node LSP driver) provides the
+      headless one-shot gate. The OMG pilot implementation stays the semantic
+      reference for anything SysIDE and the spec disagree on. Recorded in
+      `docs/TESTBED-SETUP.md` Tier M
 
 ## M1 — retroactive traceability model (entry increment; zero new experiments)
 
@@ -25,10 +31,11 @@ Track M work items (cross-cutting; gates nothing in phases 1–4). Program-level
       rerun; exp-002's pre-retrofit digest was superseded by design (2026-07-13)
 - [x] Second-campaign reproducibility checks recorded as `reproCheck` evidence
       attributes, incl. exp-003's absolute-drift caveat (2026-07-13)
-- [ ] Parse/typing check in CI (textual model must parse clean before merge) — also
-      blocks the local double gate: no SysML v2 toolchain installed on the dev host
-      yet (see M0 toolchain-pinning item); the .sysml files above are authored to the
-      standard textual notation but have NOT yet passed a parser
+- [x] Parse/typing check in CI (2026-07-13): `.github/workflows/ci.yml` runs
+      `scripts/validate-sysml.mjs` (SysIDE over LSP stdio, stdlib linked) on every
+      `models/**/*.sysml`. Both M1 files **PASS** parse + type-check; gate proven
+      able to fail (negative test: syntax error + two unresolved references all
+      caught, exit 1)
 
 ## M2 — structure model + renderer
 

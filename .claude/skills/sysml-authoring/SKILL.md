@@ -25,6 +25,11 @@ images/node IDs (zone/compute manifests own those — reference them, never rest
 
 - **Textual notation only** (`.sysml` files, git-diffable). Graphical views are derived,
   never source.
+- **Naming (decided 2026-07-13)**: UpperCamelCase for packages and definitions,
+  lowerCamelCase for usages/attributes — and the brand token is `Vxedge`, never
+  `VxEdge` (the project name is one lowercase word, `vxedge`; only the grammatical
+  first letter is capitalized, no invented internal capitals). Examples:
+  `VxedgeHypotheses` (package), `H1Isolation` (def), `h1` / `manifestSha256` (usages).
 - **One file, one concern**: `models/requirements/`, `models/vehicles/`,
   `models/experiments/`, `models/scenarios/`. A file that mixes a requirement and a
   structure def gets split.

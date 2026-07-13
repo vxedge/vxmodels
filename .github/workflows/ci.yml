@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate-models:
+    name: SysML v2 parse/type gate
+    runs-on: ubuntu-latest
+    env:
+      # Pinned toolchain (docs/TESTBED-SETUP.md Tier M) — bump deliberately, digests first.
+      SYSIDE_URL: https://github.com/sensmetry/sysml-2ls/releases/download/0.9.1/syside-languageserver.zip
+      SYSIDE_SHA256: 1c3da42826d67b2a44b897515e068ad8ee0a038ec003a06659427ed77f3af8d2
+      STDLIB_URL: https://github.com/Systems-Modeling/SysML-v2-Release/archive/refs/tags/2026-04.tar.gz
+      STDLIB_SHA256: 44996ee207eb41e4ceadc242c76d23505764d0698c3e3c7a22f0ed80517a7bdd
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch pinned SysIDE + SysML standard library
+        run: |
+          mkdir -p .tools && cd .tools
+          curl -sL -o syside.zip "$SYSIDE_URL"
+          echo "$SYSIDE_SHA256  syside.zip" | sha256sum -c -
+          unzip -o -q syside.zip
+          curl -sL -o sysml-release.tar.gz "$STDLIB_URL"
+          echo "$STDLIB_SHA256  sysml-release.tar.gz" | sha256sum -c -
+          tar -xzf sysml-release.tar.gz --wildcards "*/sysml.library/*"
+      - name: Validate models (parse + type-check, stdlib linked)
+        run: |
+          shopt -s globstar nullglob
+          files=(models/**/*.sysml)
+          [ ${#files[@]} -gt 0 ] || { echo "error: no .sysml files found"; exit 1; }
+          SYSIDE_JS="$PWD/.tools/syside-languageserver.js" \
+          SYSML_STDLIB="$PWD/.tools/SysML-v2-Release-2026-04/sysml.library" \
+          node scripts/validate-sysml.mjs "${files[@]}"

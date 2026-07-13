@@ -35,8 +35,16 @@ GenAI double gate), §4 (single-source rules), §15 track M (M0–M4 roadmap).
 ## Tooling
 
 Authoring: VS Code + SysIDE (open-source SysML v2 language server) or the OMG SysML v2
-pilot implementation (Jupyter) — see `docs/TESTBED-SETUP.md` Tier M. Authoring-time only:
-nothing here runs during a measured experiment.
+pilot implementation (Jupyter) — see `docs/TESTBED-SETUP.md` Tier M for the pinned
+versions. Authoring-time only: nothing here runs during a measured experiment.
+
+Headless parse/type gate (CI runs it on every push/PR; run locally before pushing):
+
+```bash
+SYSIDE_JS=<path>/syside-languageserver.js \
+SYSML_STDLIB=<path>/sysml.library \
+node scripts/validate-sysml.mjs models/**/*.sysml
+```
 
 ## Project skills
 
