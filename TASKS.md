@@ -39,8 +39,8 @@ Track M work items (cross-cutting; gates nothing in phases 1–4). Program-level
       (calibration set), then new experiments authored model-first
 - [ ] Variant points for arms: packaging (container/libvirt/qemu-microvm), slice mode
       (vlan/s-nssai) — mechanical arm enumeration
-- [ ] `sysml-authoring` skill (`.claude/skills/`): how to compose model elements, the
-      double gate, what is out of model scope
+- [x] `sysml-authoring` skill (`.claude/skills/`): construct mapping, double gate,
+      out-of-scope rules — delivered early with the M0 seed (2026-07-13)
 - [ ] First LLM-generated experiment passes both gates and runs end-to-end (documented
       as the paper-#3 pipeline demo)
 

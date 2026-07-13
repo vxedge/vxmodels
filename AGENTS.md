@@ -40,7 +40,8 @@ nothing here runs during a measured experiment.
 
 ## Project skills
 
-AI/contributor skills in `.claude/skills/`: **testbed-quality** (the OEM-adoption bar —
-reproducibility, fidelity honesty, interface stability, standards legibility).
-**rust-patterns** joins when the `vxmodel` crate lands (M2); **sysml-authoring** lands
-with M3.
+AI/contributor skills in `.claude/skills/`: **sysml-authoring** (MBSE discipline: the
+construct mapping, the double gate, single-source/traceability rules — apply to every
+`.sysml` change) and **testbed-quality** (the OEM-adoption bar — reproducibility,
+fidelity honesty, interface stability, standards legibility). **rust-patterns** joins
+when the `vxmodel` crate lands (M2).
