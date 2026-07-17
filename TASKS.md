@@ -62,10 +62,21 @@ authoring can start anytime; the renderer waits.
       CampaignFrame, per-campaign varied-vs-fixed structure. Passes the SysIDE gate.
       Two grammar lessons codified in sysml-authoring: keyword collisions (`frame`),
       enum-defs-are-variations
-- [ ] New experiments authored model-first (starts with exp-010/H2 — pairs with the
-      phase-2 S-NSSAI driver)
-- [ ] Slice-mode dimension (vlan/s-nssai) joins the calibration set when exp-010's
-      design lands — mechanical arm enumeration over both dimensions
+- [x] New experiments authored model-first — **delivered 2026-07-17,
+      `models/experiments/exp-010-h2-real-slicing.sysml`**: the first
+      analysis case modeled *before* it runs (phase1-analysis-cases.sysml's
+      four are retro-modeled; this is the actual forward flow M3 was scoped
+      for). `Exp010RealSlicingComparison` reuses `VxedgePhase1Experiments`'s
+      `CampaignFrame`/`InterferenceSource` unchanged (identical methodology
+      to exp-001) with a new `SliceMode` enum (`vlan`/`snssai`) as the H2
+      variant dimension. Passes the SysIDE gate clean, no regression to the
+      existing models. Honest process gap recorded in the file itself: `
+      vxmodel` (M2) doesn't exist yet, so `exp-010.yaml` will need to be
+      hand-derived from this model rather than rendered — gate 2 of the
+      double gate runs partially (real `vxedge manifest validate --json`,
+      no automated render) until M2 lands.
+- [x] Slice-mode dimension (vlan/s-nssai) joined the calibration set —
+      `SliceMode` enum in `exp-010-h2-real-slicing.sysml` (see above)
 - [x] `sysml-authoring` skill (`.claude/skills/`): construct mapping, double gate,
       out-of-scope rules — delivered early with the M0 seed (2026-07-13)
 - [ ] First LLM-generated experiment passes both gates and runs end-to-end (documented
