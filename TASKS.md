@@ -109,7 +109,15 @@ annotations can start once M2's structure model exists.
 - [ ] Scenario models (`use case`/`occurrence`) for CARLA traffic/transportation
       scenarios; mapping table toward ASAM OpenSCENARIO
 - [ ] Fidelity ledger: per-part caveat annotations (shared-host gateway, QNX-as-guest,
-      non-PREEMPT_RT, userspace timestamps) → rendered per-experiment validity envelope
+      non-PREEMPT_RT, userspace timestamps) → rendered per-experiment validity envelope.
+      Candidate annotation input, gated two-deep (Alpamayo landing in `vxcompute` phase 3,
+      *and* this item unblocking — not near-term actionable): the ASIMOV dataset
+      (https://asimov-benchmark.github.io/v1/, semantic-safety eval for foundation-model
+      AV controllers) as a semantic-safety fidelity annotation for Alpamayo specifically,
+      alongside this ledger's existing network/host caveats — everything else the ledger
+      tracks is network/timing fidelity, never model semantic safety, and Alpamayo is the
+      one workload that question actually applies to. Mirrored in `vxcompute/TASKS.md`
+      phase 3's Alpamayo item
 - [ ] Environmental KPIs as verified requirements (energy per slice/workload via
       vxtelemetry's DCGM/NVML hooks)
 - [ ] V2X multi-vehicle scenario families (phase 3: second vehicle instance + `rsu`)
