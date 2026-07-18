@@ -80,19 +80,23 @@ authoring can start anytime; the renderer waits.
 - [x] `sysml-authoring` skill (`.claude/skills/`): construct mapping, double gate,
       out-of-scope rules — delivered early with the M0 seed (2026-07-13)
 - [x] Model-first flow closed the loop — **`exp-010-h2-real-slicing.sysml`'s
-      `Exp010RealSlicingComparison` now has a real verification record**
-      (2026-07-18): `models/requirements/verification.sysml` gained
-      `Exp010RealSlicingVerification` (`objective { verify h2; }`), joined
-      to the real campaign (`vxperiments/results/exp-010/`, 25 archives, 5
-      reps × 5 loads) by manifest sha256, per the model's own
-      single-source-of-truth rule. Verdict recorded honestly: H2 does not
-      hold as measured, with a code-verified root cause (`fiveg` renders no
-      per-slice QoS/5QI/AMBR differentiation yet — an unequal comparison
-      against the vlan arm's real HTB enforcement, not evidence against the
-      hypothesis; full account in `docs/STATUS.md` and
-      `vxedge/TASKS.md`). `hypotheses.sysml`'s `h2` doc comment updated from
-      "not yet verified" to the real result. Both files reverified clean
-      against the pinned SysIDE toolchain
+      `Exp010RealSlicingComparison` now has a real verification record, and
+      H2's real, final verdict is HOLDS** (2026-07-18):
+      `models/requirements/verification.sysml`'s `Exp010RealSlicingVerification`
+      (`objective { verify h2; }`) carries the full three-campaign
+      trajectory, not just the answer — `campaign` (pre-fix, DOES NOT HOLD,
+      root cause identified: `fiveg` rendered no per-slice QoS anywhere),
+      `htbFixRetest` (real HTB fix landed and verified live, but still
+      formally borderline — 1.03x vs a 1.023x threshold — on an unmitigated
+      host), `finalRetest` (cpu governor pinning + cpu affinity +
+      randomized load order closed the gap: adas p99 growth
+      baseline→600mbit is 1.00x snssai vs 0.93x vlan — **H2 HOLDS**). All
+      three joined to their real campaigns by manifest sha256, per the
+      model's own single-source-of-truth rule. `hypotheses.sysml`'s `h2`
+      doc comment updated to the final result, narrating the trajectory
+      rather than just the destination. Both files reverified clean
+      against the pinned SysIDE toolchain after every edit. Full account:
+      `docs/STATUS.md`, `vxedge/TASKS.md`, `vxperiments/TASKS.md`
 - [ ] First LLM-generated experiment passes both gates and runs end-to-end (documented
       as the paper-#3 pipeline demo)
 
