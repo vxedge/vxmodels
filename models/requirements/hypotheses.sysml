@@ -37,17 +37,24 @@ package VxedgeHypotheses {
 	requirement h1 : H1Isolation;
 
 	requirement h2 : H2RealSlicing {
-		doc /* Verified 2026-07-18 (exp-010, snssai arm; vlan arm = exp-001's own
-		     frozen numbers) — DOES NOT HOLD as stated, with a code-verified root
-		     cause, not just an observation: vxedge-core::fiveg does not yet render
-		     any per-slice QoS (5QI/ARP/AMBR all hardcoded identical across every
-		     subscriber/slice), so the snssai arm's two PDU sessions compete
-		     undifferentiated for the same gNB/UPF path while the vlan arm's
-		     isolation comes from real HTB priority+rate enforcement — an unequal
-		     comparison, not evidence the hypothesis is false. See
-		     verification.sysml's Exp010RealSlicingVerification for the full
-		     evidence record and vxedge/TASKS.md for the QoS-differentiation gap
-		     this surfaced. */
+		doc /* HOLDS — final verdict 2026-07-18 (exp-010, snssai arm; vlan arm =
+		     exp-001's own frozen numbers). Real, kernel-level per-slice isolation
+		     (gateway::provision::apply_fiveg_slice_qos, an HTB tree on the
+		     host-side fiveg uplink mirroring the vlan arm's own apply_slices
+		     mechanism) delivers adas p99 growth of 1.00x baseline->600mbit vs the
+		     vlan arm's own 0.93x — comfortably inside tolerance. Not the first
+		     verdict this hypothesis got the same day: an earlier same-day campaign
+		     found DOES NOT HOLD with a code-verified root cause (fiveg rendered no
+		     per-slice QoS at all — an unequal comparison, not evidence against the
+		     hypothesis); the fix that closed that gap was itself checked
+		     empirically before trusting it (Open5GS's own subscriber AMBR field
+		     was confirmed live to be recorded but not enforced, so the fix is
+		     kernel HTB, not 5G-core config); and the first HTB-fix rerun was still
+		     formally borderline until host measurement confounds (cpu governor,
+		     cpu affinity, fixed load-order sequence) were closed too. See
+		     verification.sysml's Exp010RealSlicingVerification (`campaign` ->
+		     `htbFixRetest` -> `finalRetest`) for the complete trajectory, not just
+		     the final answer. */
 	}
 
 	requirement h3 : H3VirtualizationChoice;

@@ -122,22 +122,28 @@ package VxedgeVerification {
 	verification def Exp010RealSlicingVerification {
 		doc /* exp-010, snssai arm only — the vlan arm of this comparison is exp-001
 		     itself (identical topology/probe methodology, no same-day rerun; see
-		     Exp001SliceIsolation above). adas p99 grows 4.26x baseline (329.2 us at
-		     0 mbit) at 0 mbit to 5.73x at 600 mbit (410.9 us), a 1.25x growth in the
-		     snssai arm vs 0.93x (essentially flat) in the vlan arm — H2 does not
-		     hold as stated. Root cause identified by code inspection, not just
-		     observed: vxedge-core::fiveg::subscriber hardcodes identical QCI/5QI=9,
-		     ARP priority_level=8, and 1 Gbps AMBR for every subscriber/slice;
-		     render_smf/render_upf never reference the manifest's Slice.qos block at
-		     all. The vlan arm's isolation comes from real HTB priority+min/max-rate
-		     enforcement (gateway::provision::apply_slices); the snssai arm has no
-		     equivalent differentiation, so both slices compete undifferentiated for
-		     the same gNB/UPF path under load. This is an unequal comparison, not
-		     evidence against the hypothesis — closing the QoS-differentiation gap
-		     (per-slice 5QI/ARP/AMBR rendered from Slice.qos) is a precondition for a
-		     fair re-test, tracked in vxedge/TASKS.md. Zero loss at every load level,
-		     both arms; 25 archives, 5 reps x 5 loads, 60s window/1000pps
-		     (60k samples/point, well-supported). */
+		     Exp001SliceIsolation above). **H2 HOLDS**, final verdict 2026-07-18:
+		     adas p99 growth baseline->600mbit is 1.00x (345.3 us -> 345.9 us,
+		     essentially flat) vs vlan's own 0.93x, comfortably inside the 1.10x
+		     tolerance — real, kernel-level per-slice isolation
+		     (gateway::provision::apply_fiveg_slice_qos), zero loss at every load
+		     level, 25 archives, 5 reps x 5 loads, 60s window/1000pps (60k
+		     samples/point). Three attributes below record the full trajectory, not
+		     just the final answer: `campaign` (pre-fix, DOES NOT HOLD, root cause
+		     identified — no per-slice QoS enforcement anywhere in fiveg),
+		     `htbFixRetest` (the HTB fix landed, but still formally borderline —
+		     0.007 below the tolerance threshold, on an unmitigated host),
+		     `finalRetest` (host-confound mitigation — cpu governor pinning, cpu
+		     affinity, randomized load order per rep — landed, H2 HOLDS). A
+		     specific, reproducible elevation at the 250mbit load point persists
+		     across all three campaigns; randomizing load order in the final
+		     campaign confirmed it's load-correlated (ran at every one of the five
+		     possible sequence positions across the five reps and stayed elevated
+		     regardless) rather than a host-scheduling artifact tied to run order —
+		     but its magnitude shrunk to within the calibrated noise floor
+		     (vxperiments/results/exp-010-noise-floor-2026-07-18/, 15 reps zero
+		     stimulus, p99 median 338.9us IQR 14.3us range 316.7-355.3us), so it
+		     does not change the verdict. */
 		objective {
 			verify h2;
 		}
@@ -147,8 +153,26 @@ package VxedgeVerification {
 			attribute :>> archiveCount = 25;
 			attribute :>> campaignDate = "2026-07-18";
 			attribute :>> verdict = "H2 DOES NOT HOLD (root cause: fiveg has no per-slice QoS/5QI/AMBR differentiation yet — unequal comparison, not evidence against the hypothesis)";
-			attribute :>> frozenSummary = "vxperiments/results/exp-010/exp-010-summary.md";
+			attribute :>> frozenSummary = "vxperiments/results/exp-010-no-qos-2026-07-18/exp-010-summary.md";
 			attribute :>> caveats = "shared-host gateway; non-PREEMPT_RT kernel; userspace timestamps; TrafficService's spawned vxprobe send has no live --metrics yet (final aggregate JSON only); vlan arm not rerun (exp-001's own frozen numbers, identical mechanism)";
+		}
+		attribute htbFixRetest : CampaignEvidence {
+			attribute :>> experimentId = "exp-010";
+			attribute :>> manifestSha256 = "aab3effc3749eacc8cf69bf2e5151240948fc01a523333a95f935b90812a637c";
+			attribute :>> archiveCount = 25;
+			attribute :>> campaignDate = "2026-07-18";
+			attribute :>> verdict = "H2 DOES NOT HOLD (formally borderline: snssai 1.03x vs a 1.023x threshold, a 0.007 margin — HTB mechanism fix landed and independently verified live, but host measured on powersave governor, no cpu pinning, fixed load-order sequence every rep)";
+			attribute :>> frozenSummary = "vxperiments/results/exp-010-qos-fix-unmitigated-2026-07-18/exp-010-summary.md";
+			attribute :>> caveats = "same manifest as finalRetest (qos declared on both slices) — only the runner's host-confound mitigations differ between this and finalRetest; empirically confirmed live (not assumed) that Open5GS's own subscriber AMBR field is recorded but not enforced by its software UPF, hence the HTB-based fix instead of 5QI/ARP/AMBR rendering";
+		}
+		attribute finalRetest : CampaignEvidence {
+			attribute :>> experimentId = "exp-010";
+			attribute :>> manifestSha256 = "aab3effc3749eacc8cf69bf2e5151240948fc01a523333a95f935b90812a637c";
+			attribute :>> archiveCount = 25;
+			attribute :>> campaignDate = "2026-07-18";
+			attribute :>> verdict = "H2 HOLDS (adas p99 growth baseline->600mbit: snssai 1.00x vs vlan 0.93x, well inside the 1.10x tolerance)";
+			attribute :>> frozenSummary = "vxperiments/results/exp-010/exp-010-summary.md";
+			attribute :>> caveats = "shared-host gateway; non-PREEMPT_RT kernel; userspace timestamps; cpu pinning is best-effort (vxedged + host-side vxprobe/vxtraffic taskset to reserved cores, podman containers incl. adas-probe's own reflector not cpuset-restricted); 250mbit load point still shows a reproducible elevation (confirmed load-correlated via randomized order, not position-correlated) but within the calibrated noise floor, not large enough to change the verdict";
 		}
 	}
 }
