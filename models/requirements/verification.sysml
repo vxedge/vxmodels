@@ -118,4 +118,37 @@ package VxedgeVerification {
 			attribute :>> caveats = "manifest changed between runs (optional_scrape_targets fix), hence digest differs; absolute-us figures are session properties, not testbed constants";
 		}
 	}
+
+	verification def Exp010RealSlicingVerification {
+		doc /* exp-010, snssai arm only — the vlan arm of this comparison is exp-001
+		     itself (identical topology/probe methodology, no same-day rerun; see
+		     Exp001SliceIsolation above). adas p99 grows 4.26x baseline (329.2 us at
+		     0 mbit) at 0 mbit to 5.73x at 600 mbit (410.9 us), a 1.25x growth in the
+		     snssai arm vs 0.93x (essentially flat) in the vlan arm — H2 does not
+		     hold as stated. Root cause identified by code inspection, not just
+		     observed: vxedge-core::fiveg::subscriber hardcodes identical QCI/5QI=9,
+		     ARP priority_level=8, and 1 Gbps AMBR for every subscriber/slice;
+		     render_smf/render_upf never reference the manifest's Slice.qos block at
+		     all. The vlan arm's isolation comes from real HTB priority+min/max-rate
+		     enforcement (gateway::provision::apply_slices); the snssai arm has no
+		     equivalent differentiation, so both slices compete undifferentiated for
+		     the same gNB/UPF path under load. This is an unequal comparison, not
+		     evidence against the hypothesis — closing the QoS-differentiation gap
+		     (per-slice 5QI/ARP/AMBR rendered from Slice.qos) is a precondition for a
+		     fair re-test, tracked in vxedge/TASKS.md. Zero loss at every load level,
+		     both arms; 25 archives, 5 reps x 5 loads, 60s window/1000pps
+		     (60k samples/point, well-supported). */
+		objective {
+			verify h2;
+		}
+		attribute campaign : CampaignEvidence {
+			attribute :>> experimentId = "exp-010";
+			attribute :>> manifestSha256 = "d8a988e515434edb7d93ab21ee15457ea737c234dc774922d72fceccda0b1a83";
+			attribute :>> archiveCount = 25;
+			attribute :>> campaignDate = "2026-07-18";
+			attribute :>> verdict = "H2 DOES NOT HOLD (root cause: fiveg has no per-slice QoS/5QI/AMBR differentiation yet — unequal comparison, not evidence against the hypothesis)";
+			attribute :>> frozenSummary = "vxperiments/results/exp-010/exp-010-summary.md";
+			attribute :>> caveats = "shared-host gateway; non-PREEMPT_RT kernel; userspace timestamps; TrafficService's spawned vxprobe send has no live --metrics yet (final aggregate JSON only); vlan arm not rerun (exp-001's own frozen numbers, identical mechanism)";
+		}
+	}
 }

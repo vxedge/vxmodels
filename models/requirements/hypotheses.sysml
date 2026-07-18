@@ -37,10 +37,17 @@ package VxedgeHypotheses {
 	requirement h1 : H1Isolation;
 
 	requirement h2 : H2RealSlicing {
-		doc /* Not yet verified — phase-2 gate (paper #2 dataset). The absence of a
-		     verify link here is the honest state of the traceability chain, not an
-		     omission: no verification case exists until the Open5GS/UERANSIM driver
-		     lands and exp-010 (or successor) runs. */
+		doc /* Verified 2026-07-18 (exp-010, snssai arm; vlan arm = exp-001's own
+		     frozen numbers) — DOES NOT HOLD as stated, with a code-verified root
+		     cause, not just an observation: vxedge-core::fiveg does not yet render
+		     any per-slice QoS (5QI/ARP/AMBR all hardcoded identical across every
+		     subscriber/slice), so the snssai arm's two PDU sessions compete
+		     undifferentiated for the same gNB/UPF path while the vlan arm's
+		     isolation comes from real HTB priority+rate enforcement — an unequal
+		     comparison, not evidence the hypothesis is false. See
+		     verification.sysml's Exp010RealSlicingVerification for the full
+		     evidence record and vxedge/TASKS.md for the QoS-differentiation gap
+		     this surfaced. */
 	}
 
 	requirement h3 : H3VirtualizationChoice;

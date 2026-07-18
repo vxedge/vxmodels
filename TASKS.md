@@ -79,6 +79,20 @@ authoring can start anytime; the renderer waits.
       `SliceMode` enum in `exp-010-h2-real-slicing.sysml` (see above)
 - [x] `sysml-authoring` skill (`.claude/skills/`): construct mapping, double gate,
       out-of-scope rules — delivered early with the M0 seed (2026-07-13)
+- [x] Model-first flow closed the loop — **`exp-010-h2-real-slicing.sysml`'s
+      `Exp010RealSlicingComparison` now has a real verification record**
+      (2026-07-18): `models/requirements/verification.sysml` gained
+      `Exp010RealSlicingVerification` (`objective { verify h2; }`), joined
+      to the real campaign (`vxperiments/results/exp-010/`, 25 archives, 5
+      reps × 5 loads) by manifest sha256, per the model's own
+      single-source-of-truth rule. Verdict recorded honestly: H2 does not
+      hold as measured, with a code-verified root cause (`fiveg` renders no
+      per-slice QoS/5QI/AMBR differentiation yet — an unequal comparison
+      against the vlan arm's real HTB enforcement, not evidence against the
+      hypothesis; full account in `docs/STATUS.md` and
+      `vxedge/TASKS.md`). `hypotheses.sysml`'s `h2` doc comment updated from
+      "not yet verified" to the real result. Both files reverified clean
+      against the pinned SysIDE toolchain
 - [ ] First LLM-generated experiment passes both gates and runs end-to-end (documented
       as the paper-#3 pipeline demo)
 
