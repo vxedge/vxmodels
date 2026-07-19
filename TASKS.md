@@ -136,8 +136,45 @@ validates vehicle manifests directly (sniffs the top-level `vehicle:` key, no ne
       rather than just the destination. Both files reverified clean
       against the pinned SysIDE toolchain after every edit. Full account:
       `docs/STATUS.md`, `vxedge/TASKS.md`, `vxperiments/TASKS.md`
-- [ ] First LLM-generated experiment passes both gates and runs end-to-end (documented
-      as the paper-#3 pipeline demo)
+- [x] First LLM-generated experiment passes both gates and runs end-to-end — **delivered
+      2026-07-19, both gates live-verified end to end**:
+      `models/experiments/exp-pipeline-demo.sysml` (new `PipelineDemoCase` analysis def) +
+      `vxmodel render --experiment` (extends the M2 crate, doesn't replace it). Scoped
+      deliberately narrow, per an explicit design check-in before building
+      (`vxmodels/TASKS.md`'s own M3 line was left open for exactly this reason): this is
+      **not** exp-010/H2 re-derived. `exp-010-h2-real-slicing.sysml`'s analysis case only
+      models methodology (CampaignFrame, load levels, interference source, the sliceMode
+      variant) — no zones/traffic_profiles/telemetry in the model at all — so nothing to
+      render a manifest from without growing that model or reopening frozen H2 evidence
+      (verdict: HOLDS), both ruled out. Instead: one small, purpose-built, fully
+      self-contained analysis case (every §6.1 section touched once — network, zones,
+      traffic_profiles, telemetry, results), same "1:1 with the manifest" scoping vx-
+      vehicle-01.sysml used for M2. Reuses `VxedgeVehicles`' *structural* vocabulary
+      (`VehicleZone`/`ZoneNode`/`ZoneRoleKind`/the abstract `SliceInterface`/`SlicePort`)
+      via `private import`; the one concrete (value-bearing) interface, `DemoSliceInterface`,
+      is declared locally rather than imported — real tool-scope reason recorded in both the
+      model's header and `vxmodel`'s module doc: the extractor is single-file/pattern-based,
+      it doesn't resolve cross-file imports, so a concrete interface has to live in the file
+      it's rendered from (values still copied verbatim from vx-vehicle-01's own
+      `AdasSliceInterface`, not reinvented). Naming, approved before implementation per the
+      user's explicit request: no `*Manifest` suffix anywhere — `extract::AnalysisCase`
+      (named after the SysML construct it reads, mirroring M2's `extract::VehicleModel`,
+      and deliberately distinct from `vxedge_core::ExperimentManifest`'s name), CLI
+      `--experiment <model.sysml>` alongside the existing `--vehicle` (mutually exclusive,
+      shared `--out`/`--image`). 3 new unit tests (real-model extraction, YAML shape, a
+      malformed-model error path — 6 total in the crate now), clippy/fmt clean. **Both gates
+      live-verified end to end**: SysIDE gate (incl. a negative test: broken port reference
+      → caught, restored → clean) → `vxmodel render --experiment` on the real model →
+      `vxedge manifest validate --json` on the output →
+      `{"valid":true,"kind":"experiment","experiment_id":"exp-pipeline-demo","zones":1,
+      "compute":0,"services":0}`. Failure path also verified: no `--image` → exit 1, no file
+      written; `--vehicle` + `--experiment` together → rejected as mutually exclusive.
+      **Left open, not solved here** (flagged rather than silently decided): rendering the
+      methodology-only analysis-case shape (exp-010's own), and how an open variant
+      dimension (e.g. `sliceMode` with no default) collapses to one concrete manifest —
+      both need their own design pass if/when a real hypothesis campaign needs generating
+      this way, not assumed solved by this demo. Regression test suite planned as the next
+      item after this (user request, not yet scoped).
 
 ## M4 — scenarios + fidelity ledger (aligns with phases 2–3)
 

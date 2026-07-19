@@ -1,7 +1,9 @@
-//! `vxmodel render` — turns a vx-vehicle-*.sysml structure model into a
-//! vehicle manifest YAML (docs/ARCHITECTURE.md §6.2), the second half of
-//! track M's M2 pipeline (§6.3): `.sysml` -> `vxmodel render` -> YAML ->
-//! `vxedge manifest validate --json`.
+//! `vxmodel render` — turns a `.sysml` model into a manifest YAML
+//! (docs/ARCHITECTURE.md §6), the second half of track M's model->manifest
+//! pipeline (§6.3): `.sysml` -> `vxmodel render` -> YAML ->
+//! `vxedge manifest validate --json`. Two model kinds, one command:
+//! `--vehicle <model.sysml>` (M2, §6.2 `VehicleManifest`) or
+//! `--experiment <model.sysml>` (M3, §6.1 `ExperimentManifest`).
 //!
 //! This is NOT a general SysML v2 parser. It's a narrow, pattern-based
 //! extractor scoped to exactly the authoring conventions the
@@ -9,29 +11,52 @@
 //! `attribute :>> name = value;` redefinition shape, fixed part/interface/
 //! port nesting). A model that doesn't follow those conventions won't
 //! render — that's a real, stated limitation, not a bug to silently paper
-//! over (testbed-quality: fidelity caveats stated honestly).
+//! over (testbed-quality: fidelity caveats stated honestly). One consequence
+//! worth stating plainly: extraction is single-file — a `.sysml` file's
+//! `private import`s are resolved by the real SysIDE gate (gate 1) but NOT
+//! by this text-pattern extractor, so a concrete (value-bearing) interface
+//! def has to live in the same file it's rendered from. Purely structural
+//! defs (part/port/enum shapes with no data) are fine to import, since only
+//! their names are ever pattern-matched, never their bodies — see
+//! `models/experiments/exp-pipeline-demo.sysml`'s header for a worked
+//! example of the line between the two.
+//!
+//! `--experiment` is scoped narrower still, on purpose: it renders analysis
+//! cases that are fully self-contained (every manifest field — zones,
+//! traffic_profiles, telemetry, results — modeled 1:1), not the
+//! methodology-only analysis cases in `phase1-analysis-cases.sysml` or
+//! `exp-010-h2-real-slicing.sysml` (those model a varied dimension and a
+//! campaign frame, not a topology) — rendering that second shape, and how an
+//! open variant dimension collapses to one concrete manifest, is a separate,
+//! larger design question left open in `vxmodels/TASKS.md` M3, not solved
+//! here.
 //!
 //! Images are deliberately NOT modeled in `.sysml` (sysml-authoring skill:
 //! "images/node IDs — zone/compute manifests own those, reference them,
 //! never restate them"). No real vxzones/vxcompute manifest exists yet for
-//! this vehicle's nodes, so this renderer refuses to invent plausible-looking
+//! these nodes, so this renderer refuses to invent plausible-looking
 //! image URLs; the caller supplies them via `--image <vxid>=<url>,<kind>`
 //! and render fails loudly listing exactly which vxids are missing one.
 //!
 //! The model digest (§6.3: "YAML manifest + recorded model digest") is
 //! recorded as a `# model-digest: sha256:...` YAML comment header, not a
-//! manifest field — `VehicleManifest` has `#[serde(deny_unknown_fields)]`
-//! and no digest field, and adding one is a manifest-shape change that
-//! needs ARCHITECTURE.md §6.2 sign-off first (workspace CLAUDE.md hard
-//! rule), not something this renderer decides unilaterally.
+//! manifest field — neither `VehicleManifest` nor `ExperimentManifest` has
+//! a digest field, and adding one is a manifest-shape change that needs
+//! ARCHITECTURE.md sign-off first (workspace CLAUDE.md hard rule), not
+//! something this renderer decides unilaterally.
 
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
+enum ModelKind {
+    Vehicle(PathBuf),
+    Experiment(PathBuf),
+}
+
 struct Args {
-    vehicle: PathBuf,
+    model: ModelKind,
     out: PathBuf,
     images: BTreeMap<String, ImageSpec>,
 }
@@ -41,21 +66,29 @@ struct ImageSpec {
     kind: String,
 }
 
+const USAGE: &str = "usage: vxmodel render (--vehicle | --experiment) <model.sysml> --out <manifest.yaml> [--image <vxid>=<url>,<kind> ...]";
+
 fn parse_args() -> Result<Args, String> {
     let mut vehicle = None;
+    let mut experiment = None;
     let mut out = None;
     let mut images = BTreeMap::new();
     let mut args = std::env::args().skip(1);
-    // Subcommand: `vxmodel render ...` (the only one today; M2 scopes just this).
+    // Subcommand: `vxmodel render ...` (the only one today).
     match args.next().as_deref() {
         Some("render") => {}
         Some(other) => return Err(format!("unknown subcommand `{other}` (expected `render`)")),
-        None => return Err("usage: vxmodel render --vehicle <model.sysml> --out <manifest.yaml> [--image <vxid>=<url>,<kind> ...]".to_string()),
+        None => return Err(USAGE.to_string()),
     }
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--vehicle" => {
                 vehicle = Some(PathBuf::from(args.next().ok_or("--vehicle needs a value")?));
+            }
+            "--experiment" => {
+                experiment = Some(PathBuf::from(
+                    args.next().ok_or("--experiment needs a value")?,
+                ));
             }
             "--out" => {
                 out = Some(PathBuf::from(args.next().ok_or("--out needs a value")?));
@@ -79,8 +112,16 @@ fn parse_args() -> Result<Args, String> {
             other => return Err(format!("unknown argument `{other}`")),
         }
     }
+    let model = match (vehicle, experiment) {
+        (Some(v), None) => ModelKind::Vehicle(v),
+        (None, Some(e)) => ModelKind::Experiment(e),
+        (None, None) => return Err(format!("--vehicle or --experiment is required\n{USAGE}")),
+        (Some(_), Some(_)) => {
+            return Err("--vehicle and --experiment are mutually exclusive".to_string());
+        }
+    };
     Ok(Args {
-        vehicle: vehicle.ok_or("--vehicle is required")?,
+        model,
         out: out.ok_or("--out is required")?,
         images,
     })
@@ -95,40 +136,52 @@ fn main() -> ExitCode {
         }
     };
 
-    let source = match std::fs::read_to_string(&args.vehicle) {
+    let model_path = match &args.model {
+        ModelKind::Vehicle(p) | ModelKind::Experiment(p) => p,
+    };
+    let source = match std::fs::read_to_string(model_path) {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("error: cannot read `{}`: {e}", args.vehicle.display());
+            eprintln!("error: cannot read `{}`: {e}", model_path.display());
             return ExitCode::FAILURE;
         }
     };
-
-    let model = match extract::VehicleModel::parse(&source) {
-        Ok(m) => m,
-        Err(e) => {
-            eprintln!(
-                "error: cannot extract a vehicle structure from `{}`: {e}",
-                args.vehicle.display()
-            );
-            return ExitCode::FAILURE;
-        }
-    };
-
-    let missing: Vec<&str> = model
-        .required_vxids()
-        .into_iter()
-        .filter(|id| !args.images.contains_key(*id))
-        .collect();
-    if !missing.is_empty() {
-        eprintln!(
-            "error: no --image supplied for: {} (this renderer never invents image URLs — see the file header doc)",
-            missing.join(", ")
-        );
-        return ExitCode::FAILURE;
-    }
-
     let digest = Sha256::digest(source.as_bytes());
-    let yaml = render::to_yaml(&model, &args.images, &digest);
+
+    let yaml = match &args.model {
+        ModelKind::Vehicle(p) => {
+            let model = match extract::VehicleModel::parse(&source) {
+                Ok(m) => m,
+                Err(e) => {
+                    eprintln!(
+                        "error: cannot extract a vehicle structure from `{}`: {e}",
+                        p.display()
+                    );
+                    return ExitCode::FAILURE;
+                }
+            };
+            if let Some(code) = check_missing_images(model.required_vxids(), &args.images) {
+                return code;
+            }
+            render::to_yaml(&model, &args.images, &digest)
+        }
+        ModelKind::Experiment(p) => {
+            let model = match extract::AnalysisCase::parse(&source) {
+                Ok(m) => m,
+                Err(e) => {
+                    eprintln!(
+                        "error: cannot extract an analysis case from `{}`: {e}",
+                        p.display()
+                    );
+                    return ExitCode::FAILURE;
+                }
+            };
+            if let Some(code) = check_missing_images(model.required_vxids(), &args.images) {
+                return code;
+            }
+            render::experiment_to_yaml(&model, &args.images, &digest)
+        }
+    };
 
     if let Some(parent) = args.out.parent()
         && !parent.as_os_str().is_empty()
@@ -143,11 +196,32 @@ fn main() -> ExitCode {
     }
     println!(
         "rendered {} -> {} (model-digest sha256:{:x})",
-        args.vehicle.display(),
+        model_path.display(),
         args.out.display(),
         digest
     );
     ExitCode::SUCCESS
+}
+
+/// Shared "never invent an image" gate for both model kinds. Returns `Some`
+/// (the failure exit code) if any required vxid has no `--image` supplied.
+fn check_missing_images(
+    required: Vec<&str>,
+    images: &BTreeMap<String, ImageSpec>,
+) -> Option<ExitCode> {
+    let missing: Vec<&str> = required
+        .into_iter()
+        .filter(|id| !images.contains_key(*id))
+        .collect();
+    if missing.is_empty() {
+        None
+    } else {
+        eprintln!(
+            "error: no --image supplied for: {} (this renderer never invents image URLs — see the file header doc)",
+            missing.join(", ")
+        );
+        Some(ExitCode::FAILURE)
+    }
 }
 
 /// Pattern-based extraction of the narrow `.sysml` subset this project's
@@ -183,6 +257,115 @@ mod extract {
         pub zones: Vec<ZoneDef>,
         pub compute_gpu: String,
         pub slices: Vec<SliceDef>,
+    }
+
+    #[derive(Debug)]
+    pub struct TrafficProfileDef {
+        pub source: String,
+        pub target: String,
+        pub bandwidth_mbps: u32,
+        pub payload_bytes: u32,
+    }
+
+    #[derive(Debug)]
+    pub struct ResultsDef {
+        pub artifact_dir: String,
+        pub upload: bool,
+    }
+
+    /// An `analysis def` extracted 1:1 into `ExperimentManifest` shape (§6.1).
+    /// See the module doc: scoped to fully self-contained analysis cases only
+    /// (every field modeled), not the methodology-only shape
+    /// `exp-010-h2-real-slicing.sysml` uses.
+    #[derive(Debug)]
+    pub struct AnalysisCase {
+        pub id: String,
+        pub name: String,
+        pub duration_s: u32,
+        pub zone: ZoneDef,
+        pub slices: Vec<SliceDef>,
+        pub traffic: TrafficProfileDef,
+        pub scrape_target: String,
+        pub results: ResultsDef,
+    }
+
+    impl AnalysisCase {
+        /// vxids this model needs an `--image` for: the one zone node.
+        pub fn required_vxids(&self) -> Vec<&str> {
+            vec![self.zone.node.part_name.as_str()]
+        }
+
+        pub fn parse(src: &str) -> Result<Self, String> {
+            let case_block = analysis_case_block(src)?;
+            let slices = extract_slices(src)?;
+
+            let id = attr_decl_string(case_block, "id")
+                .ok_or("analysis case has no `attribute id : String = \"...\";`")?;
+            let name = attr_decl_string(case_block, "name")
+                .ok_or("analysis case has no `attribute name : String = \"...\";`")?;
+            let duration_s = attr_decl_number(case_block, "durationS")
+                .ok_or("analysis case has no `attribute durationS : Natural = N;`")?;
+
+            let (_, z_open, z_close) = block_at(case_block, ": VehicleZone {", 0)
+                .ok_or("analysis case has no `: VehicleZone { ... }` zone")?;
+            let zone = parse_zone(&case_block[z_open + 1..z_close], &slices)?;
+
+            let (_, t_open, t_close) = block_at(case_block, ": TrafficProfile {", 0)
+                .ok_or("analysis case has no `: TrafficProfile { ... }` usage")?;
+            let traffic_block = &case_block[t_open + 1..t_close];
+            let traffic = TrafficProfileDef {
+                source: attr_string(traffic_block, "source")
+                    .ok_or("traffic profile has no `attribute :>> source = \"...\";`")?,
+                target: attr_string(traffic_block, "target")
+                    .ok_or("traffic profile has no `attribute :>> target = \"...\";`")?,
+                bandwidth_mbps: attr_number(traffic_block, "bandwidthMbps")
+                    .ok_or("traffic profile has no `attribute :>> bandwidthMbps = N;`")?,
+                payload_bytes: attr_number(traffic_block, "payloadBytes")
+                    .ok_or("traffic profile has no `attribute :>> payloadBytes = N;`")?,
+            };
+
+            let scrape_target = attr_decl_string(case_block, "scrapeTarget")
+                .ok_or("analysis case has no `attribute scrapeTarget : String = \"...\";`")?;
+
+            let (_, r_open, r_close) = block_at(case_block, ": ResultsPolicy {", 0)
+                .ok_or("analysis case has no `: ResultsPolicy { ... }` usage")?;
+            let results_block = &case_block[r_open + 1..r_close];
+            let results = ResultsDef {
+                artifact_dir: attr_string(results_block, "artifactDir")
+                    .ok_or("results policy has no `attribute :>> artifactDir = \"...\";`")?,
+                upload: attr_bool(results_block, "upload")
+                    .ok_or("results policy has no `attribute :>> upload = true|false;`")?,
+            };
+
+            Ok(AnalysisCase {
+                id,
+                name,
+                duration_s,
+                zone,
+                slices,
+                traffic,
+                scrape_target,
+                results,
+            })
+        }
+    }
+
+    /// Finds the first `analysis def <Name> { ... }` and returns its body.
+    /// The case name itself isn't needed by the renderer (the case's own
+    /// `id`/`name` attributes carry the manifest identity), so it's discarded.
+    fn analysis_case_block(src: &str) -> Result<&str, String> {
+        let marker = "analysis def ";
+        let name_start = src
+            .find(marker)
+            .ok_or("no `analysis def ... { ... }` found")?
+            + marker.len();
+        let open = src[name_start..]
+            .find('{')
+            .map(|i| name_start + i)
+            .ok_or("analysis case has no body")?;
+        let close = find_matching_brace(src.as_bytes(), open)
+            .ok_or("analysis case block is unterminated")?;
+        Ok(&src[open + 1..close])
     }
 
     impl VehicleModel {
@@ -408,6 +591,35 @@ mod extract {
         block[start..end].parse().ok()
     }
 
+    fn attr_bool(block: &str, name: &str) -> Option<bool> {
+        let marker = format!("attribute :>> {name} = ");
+        let start = block.find(&marker)? + marker.len();
+        if block[start..].starts_with("true") {
+            Some(true)
+        } else if block[start..].starts_with("false") {
+            Some(false)
+        } else {
+            None
+        }
+    }
+
+    /// A plain (non-redefinition) `attribute {name} : String = "value";`
+    /// declaration, the shape top-level analysis-case attributes use (they
+    /// have no supertype feature to redefine, unlike `Vehicle`'s `:>> id`).
+    fn attr_decl_string(block: &str, name: &str) -> Option<String> {
+        let marker = format!("attribute {name} : String = \"");
+        let start = block.find(&marker)? + marker.len();
+        let end = block[start..].find('"')? + start;
+        Some(block[start..end].to_string())
+    }
+
+    fn attr_decl_number(block: &str, name: &str) -> Option<u32> {
+        let marker = format!("attribute {name} : Natural = ");
+        let start = block.find(&marker)? + marker.len();
+        let end = block[start..].find(|c: char| !c.is_ascii_digit())? + start;
+        block[start..end].parse().ok()
+    }
+
     fn enum_value(block: &str, name: &str, enum_name: &str) -> Option<String> {
         let marker = format!("attribute :>> {name} = {enum_name}::");
         let start = block.find(&marker)? + marker.len();
@@ -539,6 +751,93 @@ mod render {
         y
     }
 
+    /// Renders an `extract::AnalysisCase` into `ExperimentManifest`-shaped
+    /// YAML (§6.1). Same hand-written-YAML, no-serde-round-trip approach as
+    /// `to_yaml`, same reason (no cross-repo Rust dependency).
+    pub fn experiment_to_yaml(
+        model: &super::extract::AnalysisCase,
+        images: &BTreeMap<String, ImageSpec>,
+        digest: &Output<Sha256>,
+    ) -> String {
+        let mut y = String::new();
+        let _ = writeln!(y, "# model-digest: sha256:{digest:x}");
+        let _ = writeln!(
+            y,
+            "# rendered by vxmodel from a .sysml source — do not hand-edit; edit the model and re-render."
+        );
+        let _ = writeln!(y, "experiment:");
+        let _ = writeln!(y, "  id: {}", yaml_str(&model.id));
+        let _ = writeln!(y, "  name: {}", yaml_str(&model.name));
+        let _ = writeln!(y, "  duration_s: {}", model.duration_s);
+        let _ = writeln!(
+            y,
+            "  results_prefix: {}",
+            yaml_str(&model.results.artifact_dir)
+        );
+        let _ = writeln!(y);
+
+        let _ = writeln!(y, "network:");
+        let _ = writeln!(y, "  slices:");
+        for s in &model.slices {
+            let _ = writeln!(y, "    - id: {}", s.id);
+            let _ = writeln!(y, "      mode: vlan");
+            let _ = writeln!(y, "      vlan: {}", s.vlan);
+            let _ = writeln!(
+                y,
+                "      qos: {{ min_rate_mbps: {}, max_rate_mbps: {}, priority: {} }}",
+                s.min_rate_mbps, s.max_rate_mbps, s.priority
+            );
+        }
+        let _ = writeln!(y);
+
+        let z = &model.zone;
+        let node = &z.node;
+        let node_id = format!("node-{}", super::extract::camel_to_kebab(&node.part_name));
+        let zone_id = format!("vxzone-{}-01", z.role_kebab);
+        let img = &images[&node.part_name];
+        let _ = writeln!(y, "zones:");
+        let _ = writeln!(y, "  - id: {zone_id}");
+        let _ = writeln!(y, "    role: {}", z.role_kebab);
+        let _ = writeln!(y, "    nodes:");
+        let _ = writeln!(y, "      - id: {node_id}");
+        let _ = writeln!(y, "        type: {}", node.node_type);
+        let _ = writeln!(y, "        function: {}", yaml_str(&node.function));
+        let _ = writeln!(
+            y,
+            "        image: {{ url: {}, kind: {} }}",
+            yaml_str(&img.url),
+            img.kind
+        );
+        let _ = writeln!(y, "        network:");
+        let _ = writeln!(y, "          - iface: eth0");
+        let _ = writeln!(y, "            slice: {}", node.slice_id);
+        let _ = writeln!(y);
+
+        let _ = writeln!(y, "traffic_profiles:");
+        let _ = writeln!(y, "  {}-load:", z.role_kebab);
+        let _ = writeln!(y, "    source: {}", yaml_str(&model.traffic.source));
+        let _ = writeln!(y, "    target: {}", yaml_str(&model.traffic.target));
+        let _ = writeln!(y, "    bandwidth_mbps: {}", model.traffic.bandwidth_mbps);
+        let _ = writeln!(y, "    payload_bytes: {}", model.traffic.payload_bytes);
+        let _ = writeln!(y);
+
+        let _ = writeln!(y, "telemetry:");
+        let _ = writeln!(y, "  prometheus:");
+        let _ = writeln!(y, "    scrape_targets:");
+        let _ = writeln!(y, "      - {}", yaml_str(&model.scrape_target));
+        let _ = writeln!(y);
+
+        let _ = writeln!(y, "results:");
+        let _ = writeln!(
+            y,
+            "  artifact_dir: {}",
+            yaml_str(&model.results.artifact_dir)
+        );
+        let _ = writeln!(y, "  upload: {}", model.results.upload);
+
+        y
+    }
+
     fn yaml_str(s: &str) -> String {
         format!("{s:?}")
     }
@@ -651,5 +950,71 @@ package X {
 "#;
         let err = extract::VehicleModel::parse(bad).unwrap_err();
         assert!(err.contains("no `not-a-real` slice"), "got: {err}");
+    }
+
+    #[test]
+    fn renders_the_real_pipeline_demo_case() {
+        let source = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../models/experiments/exp-pipeline-demo.sysml"),
+        )
+        .expect("exp-pipeline-demo.sysml exists");
+        let model = extract::AnalysisCase::parse(&source).expect("model extracts cleanly");
+
+        assert_eq!(model.id, "exp-pipeline-demo");
+        assert_eq!(model.name, "vxmodel pipeline demo");
+        assert_eq!(model.duration_s, 30);
+        assert_eq!(model.zone.role_kebab, "front-left");
+        assert_eq!(model.zone.node.slice_id, "demo");
+        assert_eq!(model.slices.len(), 1);
+        assert_eq!(model.slices[0].vlan, 101);
+        assert_eq!(model.traffic.source, "vxzone-demo-01:node-demo-01");
+        assert_eq!(model.traffic.target, "internet");
+        assert_eq!(model.traffic.bandwidth_mbps, 50);
+        assert_eq!(model.scrape_target, "127.0.0.1:9801");
+        assert_eq!(model.results.artifact_dir, "results/exp-pipeline-demo");
+        assert!(!model.results.upload);
+    }
+
+    #[test]
+    fn experiment_to_yaml_produces_a_manifest_shaped_document() {
+        let source = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../models/experiments/exp-pipeline-demo.sysml"),
+        )
+        .unwrap();
+        let model = extract::AnalysisCase::parse(&source).unwrap();
+        let mut images = BTreeMap::new();
+        for vxid in model.required_vxids() {
+            images.insert(
+                vxid.to_string(),
+                ImageSpec {
+                    url: "local/vxprobe:host-process".to_string(),
+                    kind: "container".to_string(),
+                },
+            );
+        }
+        let digest = Sha256::digest(source.as_bytes());
+        let yaml = render::experiment_to_yaml(&model, &images, &digest);
+
+        assert!(yaml.starts_with("# model-digest: sha256:"));
+        assert!(yaml.contains("experiment:"));
+        assert!(yaml.contains("id: \"exp-pipeline-demo\""));
+        assert!(yaml.contains("duration_s: 30"));
+        assert!(yaml.contains("vxzone-front-left-01"));
+        assert!(yaml.contains("slice: demo"));
+        assert!(yaml.contains("traffic_profiles:"));
+        assert!(yaml.contains("bandwidth_mbps: 50"));
+        assert!(yaml.contains("telemetry:"));
+        assert!(yaml.contains("127.0.0.1:9801"));
+        assert!(yaml.contains("results:"));
+        assert!(yaml.contains("upload: false"));
+    }
+
+    #[test]
+    fn missing_analysis_case_is_a_parse_error_not_a_panic() {
+        let bad = "package X { part def Y { } }";
+        let err = extract::AnalysisCase::parse(bad).unwrap_err();
+        assert!(err.contains("no `analysis def"), "got: {err}");
     }
 }

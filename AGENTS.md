@@ -46,12 +46,20 @@ SYSML_STDLIB=<path>/sysml.library \
 node scripts/validate-sysml.mjs models/**/*.sysml
 ```
 
-`vxmodel/` (Rust, landed 2026-07-19): `vxmodel render --vehicle <model.sysml> --out
-<manifest.yaml> --image <vxid>=<url>,<kind> [...]` — gate 2 of the double gate below.
-Not a general SysML v2 parser: a narrow extractor scoped to this repo's own
-`sysml-authoring`-enforced conventions (see the crate's module doc). Images are a
-required, explicit CLI input, never invented — the model doesn't carry them by rule
-(§ below), and no real vxzones/vxcompute image exists yet for this vehicle's nodes.
+`vxmodel/` (Rust, landed 2026-07-19; `--experiment` added 2026-07-19 for M3): `vxmodel
+render (--vehicle | --experiment) <model.sysml> --out <manifest.yaml> --image
+<vxid>=<url>,<kind> [...]` — gate 2 of the double gate below. `--vehicle` renders
+`VehicleManifest`s (§6.2, M2); `--experiment` renders `ExperimentManifest`s (§6.1, M3),
+scoped to fully self-contained analysis cases only (every manifest section modeled 1:1,
+like `exp-pipeline-demo.sysml`) — not the methodology-only analysis cases in
+`phase1-analysis-cases.sysml`/`exp-010-h2-real-slicing.sysml`, which have no zones/
+traffic_profiles/telemetry in the model to render from. Not a general SysML v2 parser: a
+narrow, single-file, pattern-based extractor scoped to this repo's own
+`sysml-authoring`-enforced conventions (see the crate's module doc) — notably, it doesn't
+resolve cross-file `private import`s, so a concrete (value-bearing) interface def has to
+live in the same file it's rendered from; purely structural defs are fine to import.
+Images are a required, explicit CLI input, never invented — the model doesn't carry them
+by rule (§ below), and no real vxzones/vxcompute image exists yet for these nodes.
 `cd vxmodel && cargo build / test / clippy --all-targets -- -D warnings / fmt --check`
 (own `rust-toolchain.toml`, pinned 1.96.1 to match `vxedge`'s).
 
