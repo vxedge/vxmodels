@@ -39,16 +39,16 @@ Track M work items (cross-cutting; gates nothing in phases 1–4). Program-level
 
 ## M2 — structure model + renderer
 
-**Blocked on `vxedge`:** vehicle-manifest structs (§6.2) are still TODO in vxedge-core
-(`vxedge/TASKS.md` §1), so `vxedge manifest validate` cannot validate a rendered vehicle
-manifest — the M2 gate can't run until that phase-1 carryover lands. Structure-model
-authoring can start anytime; the renderer waits.
+**Unblocked 2026-07-19:** vehicle-manifest structs (§6.2) landed in vxedge-core
+(`VehicleManifest` + shared `validate_composition()`; `vxedge/TASKS.md` §1) and
+`vxedge manifest validate` now validates them directly (sniffs the top-level `vehicle:`
+key vs `experiment:`, no new flag needed) — the M2 gate can run. Structure-model authoring
+and the `vxmodel` renderer itself are both still not started.
 
 - [ ] `models/vehicles/vx-vehicle-01.sysml` — zones/nodes as `part` defs, `links`
       harness as `connection`s, slices+QoS as typed `interface`s (§6.2 mirror)
 - [ ] `vxmodel` crate (Rust): `vxmodel render --vehicle <model> --out <manifest.yaml>`,
       embedding the model digest; fails if `vxedge manifest validate --json` rejects
-      *(gate blocked: needs vehicle-manifest structs in vxedge-core first)*
 - [ ] Round-trip check in CI: render → validate → diff against the hand-written
       vx-vehicle-01 manifest once it exists in `vxperiments`
 - [ ] Add rust-patterns skill + standard Rust CI (build/test/clippy/fmt) when the crate
