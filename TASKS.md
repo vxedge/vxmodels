@@ -39,20 +39,59 @@ Track M work items (cross-cutting; gates nothing in phases 1–4). Program-level
 
 ## M2 — structure model + renderer
 
-**Unblocked 2026-07-19:** vehicle-manifest structs (§6.2) landed in vxedge-core
-(`VehicleManifest` + shared `validate_composition()`; `vxedge/TASKS.md` §1) and
-`vxedge manifest validate` now validates them directly (sniffs the top-level `vehicle:`
-key vs `experiment:`, no new flag needed) — the M2 gate can run. Structure-model authoring
-and the `vxmodel` renderer itself are both still not started.
+**Delivered 2026-07-19, both gates live-verified end to end.** Unblocked the same day by
+vehicle-manifest structs (§6.2) landing in vxedge-core (`VehicleManifest` + shared
+`validate_composition()`; `vxedge/TASKS.md` §1) — `vxedge manifest validate` now
+validates vehicle manifests directly (sniffs the top-level `vehicle:` key, no new flag).
 
-- [ ] `models/vehicles/vx-vehicle-01.sysml` — zones/nodes as `part` defs, `links`
-      harness as `connection`s, slices+QoS as typed `interface`s (§6.2 mirror)
-- [ ] `vxmodel` crate (Rust): `vxmodel render --vehicle <model> --out <manifest.yaml>`,
-      embedding the model digest; fails if `vxedge manifest validate --json` rejects
+- [x] `models/vehicles/vx-vehicle-01.sysml` — zones/nodes as `part` defs, slices+QoS as
+      typed `interface` defs (§6.2 mirror). Grounded, not invented: the two slices
+      (adas/infotainment) and their QoS are copied verbatim from exp-001's live, frozen
+      manifest — the only slice config this project has actually measured. `links` harness
+      (the construct table's third row, `connection` usages) is deliberately NOT modeled:
+      no real experiment manifest uses `links:` yet, so there's no live topology to mirror.
+      `services`/`signal_plane`/`comms`/`world` are also not modeled — phase-3/stretch
+      schema fields with no built subsystem behind them (vxcompute has zero code); adding
+      them now would overclaim readiness. `centralCompute` mirrors the manifest's
+      `compute[]` slot structurally only, same reason. Passes the SysIDE gate (gate 1).
+      One real SysIDE 0.9.1 tool limitation found and worked around, documented in the
+      model's own `Vehicle` doc comment: four sibling `part` usages redefining the same
+      shared multiplicity feature (`zones[1..*]`) fail to resolve past the first one —
+      worked around with four distinctly-named feature slots instead of one shared one.
+- [x] `vxmodel` crate (Rust, `vxmodels/vxmodel/`): `vxmodel render --vehicle <model> --out
+      <manifest.yaml> --image <vxid>=<url>,<kind> [...]`. NOT a general SysML v2 parser —
+      a narrow, pattern-based extractor scoped to exactly this repo's own
+      `sysml-authoring`-enforced conventions (fixed `attribute :>> name = value;`
+      redefinition shape); documented as a real, stated limitation in the crate's module
+      doc. Two schema/design decisions made explicit rather than silently baked in:
+      (1) **images are a required, explicit CLI input, never invented** — the
+      sysml-authoring skill rules images out of model scope, and no real vxzones/vxcompute
+      image exists yet for this vehicle's nodes, so the renderer refuses to fabricate
+      plausible-looking URLs and fails loudly listing exactly which vxids are missing one
+      (live-verified: partial `--image` set → exit 1, no file written, listing the rest);
+      (2) **the model digest (§6.3) is recorded as a `# model-digest: sha256:...` YAML
+      comment header, not a manifest field** — `VehicleManifest` has
+      `#[serde(deny_unknown_fields)]` and no digest field, and adding one is a manifest-
+      shape change that needs ARCHITECTURE.md §6.2 sign-off first (workspace CLAUDE.md
+      hard rule) — **flagged here as an open, undecided schema question**, not decided
+      unilaterally. 3 unit tests (real-model extraction, YAML shape, a malformed-model
+      error path), clippy/fmt clean. **Both gates live-verified end to end**: `vxmodel
+      render` on the real `vx-vehicle-01.sysml` → `vxedge manifest validate --json` on the
+      output → `{"valid":true,"kind":"vehicle","vehicle_id":"vx-vehicle-01","zones":4,
+      "compute":1}`.
 - [ ] Round-trip check in CI: render → validate → diff against the hand-written
-      vx-vehicle-01 manifest once it exists in `vxperiments`
-- [ ] Add rust-patterns skill + standard Rust CI (build/test/clippy/fmt) when the crate
-      lands
+      vx-vehicle-01 manifest once it exists in `vxperiments`. **Partially wired**: gate 1
+      (build/test/clippy/fmt of the `vxmodel` crate, including a test that renders the
+      real model) runs in this repo's CI (`.github/workflows/ci.yml`'s new `rust` job).
+      Gate 2 (`vxedge manifest validate --json` against the render) is NOT wired into CI —
+      it needs the `vxedge` repo's CLI binary, a separate repo this repo's CI doesn't
+      build (§4 single-source rules). Verified manually this session instead (see above);
+      automating it needs either a second checkout in this repo's CI or a workspace-level
+      check spanning both repos — not decided, left open. The diff-against-hand-written
+      third leg has nothing to diff against yet: no `vx-vehicle-01.yaml` exists in
+      `vxperiments` (nobody's asked for one outside this model).
+- [x] Add rust-patterns skill + standard Rust CI (build/test/clippy/fmt) — done 2026-07-19
+      (`AGENTS.md` project-skills note, `.github/workflows/ci.yml`'s `rust` job).
 
 ## M3 — analysis cases + variants (GenAI generation target; aligns with phase 2)
 

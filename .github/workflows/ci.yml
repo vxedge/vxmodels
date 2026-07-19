@@ -37,3 +37,33 @@ jobs:
           SYSIDE_JS="$PWD/.tools/syside-languageserver.js" \
           SYSML_STDLIB="$PWD/.tools/SysML-v2-Release-2026-04/sysml.library" \
           node scripts/validate-sysml.mjs "${files[@]}"
+
+  rust:
+    name: vxmodel crate (M2 renderer)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vxmodel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: vxmodel
+      - name: Build
+        run: cargo build
+      - name: Test
+        # Exercises gate 1's output shape: renders the real vx-vehicle-01.sysml
+        # and checks the emitted YAML. Gate 2 (`vxedge manifest validate --json`
+        # against the render) is NOT wired into this job — it needs the vxedge
+        # repo's CLI, a separate clone/build this repo's CI doesn't own (§4
+        # single-source rules: this repo doesn't build vxedge's binary). Run it
+        # manually per the sysml-authoring skill's double-gate command, or from
+        # a workspace-level check that has both repos checked out.
+        run: cargo test
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Format
+        run: cargo fmt --check

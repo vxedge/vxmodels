@@ -46,10 +46,19 @@ SYSML_STDLIB=<path>/sysml.library \
 node scripts/validate-sysml.mjs models/**/*.sysml
 ```
 
+`vxmodel/` (Rust, landed 2026-07-19): `vxmodel render --vehicle <model.sysml> --out
+<manifest.yaml> --image <vxid>=<url>,<kind> [...]` — gate 2 of the double gate below.
+Not a general SysML v2 parser: a narrow extractor scoped to this repo's own
+`sysml-authoring`-enforced conventions (see the crate's module doc). Images are a
+required, explicit CLI input, never invented — the model doesn't carry them by rule
+(§ below), and no real vxzones/vxcompute image exists yet for this vehicle's nodes.
+`cd vxmodel && cargo build / test / clippy --all-targets -- -D warnings / fmt --check`
+(own `rust-toolchain.toml`, pinned 1.96.1 to match `vxedge`'s).
+
 ## Project skills
 
 AI/contributor skills in `.claude/skills/`: **sysml-authoring** (MBSE discipline: the
 construct mapping, the double gate, single-source/traceability rules — apply to every
 `.sysml` change) and **testbed-quality** (the OEM-adoption bar — reproducibility,
-fidelity honesty, interface stability, standards legibility). **rust-patterns** joins
-when the `vxmodel` crate lands (M2).
+fidelity honesty, interface stability, standards legibility). **rust-patterns** applies
+to `vxmodel/` now that the crate has landed (M2, 2026-07-19).
