@@ -79,17 +79,20 @@ validates vehicle manifests directly (sniffs the top-level `vehicle:` key, no ne
       render` on the real `vx-vehicle-01.sysml` → `vxedge manifest validate --json` on the
       output → `{"valid":true,"kind":"vehicle","vehicle_id":"vx-vehicle-01","zones":4,
       "compute":1}`.
-- [ ] Round-trip check in CI: render → validate → diff against the hand-written
-      vx-vehicle-01 manifest once it exists in `vxperiments`. **Partially wired**: gate 1
-      (build/test/clippy/fmt of the `vxmodel` crate, including a test that renders the
-      real model) runs in this repo's CI (`.github/workflows/ci.yml`'s new `rust` job).
-      Gate 2 (`vxedge manifest validate --json` against the render) is NOT wired into CI —
-      it needs the `vxedge` repo's CLI binary, a separate repo this repo's CI doesn't
-      build (§4 single-source rules). Verified manually this session instead (see above);
-      automating it needs either a second checkout in this repo's CI or a workspace-level
-      check spanning both repos — not decided, left open. The diff-against-hand-written
-      third leg has nothing to diff against yet: no `vx-vehicle-01.yaml` exists in
-      `vxperiments` (nobody's asked for one outside this model).
+- [x] Round-trip check in CI: render → validate. **Gate 2 wired 2026-07-19** (regression-
+      suite scoping, user request): `.github/workflows/ci.yml`'s new `pipeline-regression`
+      job checks out `vxedge` as a sibling repo, builds `vxedge-cli`, then runs the full
+      double-gate pipeline (SysIDE already gated by the `validate-models` job; render →
+      `vxedge manifest validate --json`) for both renderable models — `vx-vehicle-01.sysml`
+      (M2, asserts `valid, zones==4, compute==1`) and `exp-pipeline-demo.sysml` (M3, asserts
+      `valid, zones==1, kind==experiment`) — script logic verified locally (identical
+      commands, identical output) before committing. Requires a repo secret
+      `VXEDGE_CROSS_REPO_TOKEN` (PAT with read access to `vxedge/vxedge`, since both repos
+      are private) — **provisioning that secret is a repo-admin action, not done here**;
+      until it's added, the job fails loudly at the checkout step rather than silently
+      skipping. The diff-against-hand-written third leg still has nothing to diff against:
+      no `vx-vehicle-01.yaml`/`exp-pipeline-demo.yaml` exists in `vxperiments` (nobody's
+      asked for one outside these models) — left open, not solved by this job.
 - [x] Add rust-patterns skill + standard Rust CI (build/test/clippy/fmt) — done 2026-07-19
       (`AGENTS.md` project-skills note, `.github/workflows/ci.yml`'s `rust` job).
 

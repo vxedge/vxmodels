@@ -67,3 +67,72 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings
       - name: Format
         run: cargo fmt --check
+
+  pipeline-regression:
+    name: model -> manifest double-gate regression (cross-repo)
+    runs-on: ubuntu-latest
+    needs: rust
+    # Closes the CI gap the rust job's own comment flags above: gate 2
+    # (`vxedge manifest validate --json` against a real render) needs the
+    # sibling vxedge repo's CLI binary, which this repo doesn't otherwise
+    # build. Checks out both repos side by side and runs the exact double-gate
+    # pipeline documented in sysml-authoring, for every committed renderable
+    # model, asserting the same shape verified by hand when M2/M3 landed
+    # (2026-07-19) — so a future change to vxedge-core's validation, vxmodel's
+    # extractor, or a .sysml model itself fails CI instead of silently
+    # breaking the pipeline again.
+    #
+    # Requires a repo secret `VXEDGE_CROSS_REPO_TOKEN` (a PAT with read access
+    # to vxedge/vxedge, since both repos are private and the default
+    # GITHUB_TOKEN can't check out a sibling private repo) — provisioning that
+    # secret is a repo-admin action outside what this file can do; until it's
+    # added, this job fails at the checkout step, not silently skips.
+    steps:
+      - name: Checkout vxmodels
+        uses: actions/checkout@v4
+        with:
+          path: vxmodels
+      - name: Checkout vxedge (sibling repo, read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: vxedge/vxedge
+          token: ${{ secrets.VXEDGE_CROSS_REPO_TOKEN }}
+          path: vxedge
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            vxmodels/vxmodel
+            vxedge
+      - name: Build vxmodel
+        working-directory: vxmodels/vxmodel
+        run: cargo build --release
+      - name: Build vxedge-cli
+        working-directory: vxedge
+        run: cargo build --release -p vxedge-cli
+      - name: Render + validate vx-vehicle-01 (M2 path)
+        working-directory: vxmodels
+        run: |
+          set -euo pipefail
+          VXMODEL=vxmodel/target/release/vxmodel
+          VXEDGE=../vxedge/target/release/vxedge
+          "$VXMODEL" render --vehicle models/vehicles/vx-vehicle-01.sysml \
+            --out /tmp/vx-vehicle-01-rendered.yaml \
+            --image adasProbeFl=local/vxprobe:host-process,container \
+            --image adasProbeFr=local/vxprobe:host-process,container \
+            --image infotainmentLoadRl=local/vxtraffic:host-process,container \
+            --image adasProbeRr=local/vxprobe:host-process,container \
+            --image centralCompute=local/placeholder:test,container
+          "$VXEDGE" manifest validate --manifest /tmp/vx-vehicle-01-rendered.yaml --json | tee /tmp/vehicle-result.json
+          jq -e '.valid == true and .zones == 4 and .compute == 1' /tmp/vehicle-result.json
+      - name: Render + validate exp-pipeline-demo (M3 path)
+        working-directory: vxmodels
+        run: |
+          set -euo pipefail
+          VXMODEL=vxmodel/target/release/vxmodel
+          VXEDGE=../vxedge/target/release/vxedge
+          "$VXMODEL" render --experiment models/experiments/exp-pipeline-demo.sysml \
+            --out /tmp/exp-pipeline-demo-rendered.yaml \
+            --image demoNode=local/vxprobe:host-process,container
+          "$VXEDGE" manifest validate --manifest /tmp/exp-pipeline-demo-rendered.yaml --json | tee /tmp/experiment-result.json
+          jq -e '.valid == true and .zones == 1 and .kind == "experiment"' /tmp/experiment-result.json
