@@ -98,6 +98,10 @@ jobs:
           repository: vxedge/vxedge
           token: ${{ secrets.VXEDGE_CROSS_REPO_TOKEN }}
           path: vxedge
+      - name: Install protoc
+        # vxedge-api's build.rs (tonic-prost-build) needs the protoc binary;
+        # matches vxedge/.github/workflows/ci.yml's own install step exactly.
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
