@@ -88,9 +88,18 @@ validates vehicle manifests directly (sniffs the top-level `vehicle:` key, no ne
       `valid, zones==1, kind==experiment`) — script logic verified locally (identical
       commands, identical output) before committing. Requires a repo secret
       `VXEDGE_CROSS_REPO_TOKEN` (PAT with read access to `vxedge/vxedge`, since both repos
-      are private) — **provisioning that secret is a repo-admin action, not done here**;
-      until it's added, the job fails loudly at the checkout step rather than silently
-      skipping. The diff-against-hand-written third leg still has nothing to diff against:
+      are private) — provisioned 2026-07-20; two real issues found and fixed by actually
+      running the job rather than assuming it worked: (1) the fine-grained PAT had
+      Metadata + security-advisories permissions set but no `Contents` permission, so
+      checkout 403'd with a misleading "Write access ... not granted" message even though
+      it's a pure read — fixed by adding `Contents: Read-only`; (2) `vxedge-cli`'s build
+      failed with `protoc` missing (`vxedge-api`'s `tonic-prost-build` needs it, and this
+      job's runner is fresh, unlike `vxedge`'s own CI which already installs it) — fixed by
+      adding the same `apt-get install protobuf-compiler` step `vxedge`'s CI uses. **Live
+      in CI now**: run 29745370581, all three jobs green, including the two `jq` assertions
+      inside `pipeline-regression` (`valid`/`zones==4`/`compute==1` for the vehicle path,
+      `valid`/`zones==1`/`kind==experiment` for the experiment path). The diff-against-
+      hand-written third leg still has nothing to diff against:
       no `vx-vehicle-01.yaml`/`exp-pipeline-demo.yaml` exists in `vxperiments` (nobody's
       asked for one outside these models) — left open, not solved by this job.
 - [x] Add rust-patterns skill + standard Rust CI (build/test/clippy/fmt) — done 2026-07-19
