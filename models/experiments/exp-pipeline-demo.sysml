@@ -69,10 +69,18 @@ package VxedgePipelineDemo {
 	// --- experiment-only vocabulary (no vehicle-model counterpart) ---------------
 
 	attribute def TrafficProfile {
-		doc /* One `traffic_profiles` entry (§6.1). source/target follow the
-		     manifest's own `<zone>:<node>` or `internet` string convention —
-		     modeled as plain strings, not a typed reference, since the
-		     manifest itself doesn't type them either. */
+		doc /* One `traffic_profiles` entry (§6.0). source/target name a node
+		     *part* in this model, or one of the manifest's symbolic endpoints
+		     (`internet`, `carla`) — modeled as plain strings, not a typed
+		     reference, since the manifest itself doesn't type them either.
+		     Naming the part rather than a rendered device id keeps rendered ids
+		     out of the model, which is the sysml-authoring rule; `vxmodel
+		     render` resolves the part to whatever device id it emits. Until
+		     2026-07-31 this followed §6.1's `<zone>:<node>` convention and named
+		     `vxzone-demo-01:node-demo-01`, which the renderer never actually
+		     emitted — §6.1 validation does not check traffic endpoints, so a
+		     dangling one rendered and validated cleanly for months. §6.0 checks
+		     them, and caught it the first time this model was rendered. */
 		attribute source : String;
 		attribute target : String;
 		attribute bandwidthMbps : Natural;
@@ -111,7 +119,7 @@ package VxedgePipelineDemo {
 		}
 
 		attribute demoTraffic : TrafficProfile {
-			attribute :>> source = "vxzone-demo-01:node-demo-01";
+			attribute :>> source = "demoNode";
 			attribute :>> target = "internet";
 			attribute :>> bandwidthMbps = 50;
 			attribute :>> payloadBytes = 1200;

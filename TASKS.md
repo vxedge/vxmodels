@@ -105,6 +105,39 @@ validates vehicle manifests directly (sniffs the top-level `vehicle:` key, no ne
 - [x] Add rust-patterns skill + standard Rust CI (build/test/clippy/fmt) — done 2026-07-19
       (`AGENTS.md` project-skills note, `.github/workflows/ci.yml`'s `rust` job).
 
+## Renderer emits §6.0 workspaces — **delivered 2026-07-31**
+
+`vxedge` retired §6.1/§6.2 and deleted their structs. This repo moved first so no gate was ever
+red: `vxmodel render` emits workspaces, CI asserts the new shape, and only then did `vxedge`
+delete `manifest.rs`.
+
+- [x] **`vxmodel render` emits a §6.0 workspace** — one file, `---`-separated: `kind:
+      experiment` + `kind: vehicle` + `kind: baseline`. A workspace is allowed to be one file
+      because every §6.0 reference is by id, so the renderer still writes a single artifact.
+      Both paths (`--vehicle`, `--experiment`) render and validate clean against the real
+      models. Placement rather than invention: slices are experiment-level in §6.0, zones become
+      regions with one device each, `--image <vxid>=<url>,<kind>` decides both the device's
+      `backend:` and the part's `kind:` (the resolution §6.1 did implicitly from `image.kind`),
+      and a node's `function`/`nodeType` prose — which §6.0 has no field for — is kept as a
+      comment rather than dropped.
+- [x] **`pipeline-regression` updated** — asserts `kind == "workspace"` plus workspace counts
+      (`devices`, `slices`, `vehicles`, `experiment_id`). Pinning `kind` matters: without it the
+      job would have passed on a renderer that regressed, back when validate still accepted the
+      old shapes. Both gates were run locally with the exact CI assertions before committing.
+- [x] **`vxedge` deleted `manifest.rs`** once this landed.
+
+**A real defect this surfaced.** `exp-pipeline-demo.sysml` declared its traffic source as
+`"vxzone-demo-01:node-demo-01"` — §6.1's synthesized `<zone>:<node>` form, naming a node the
+renderer never actually emitted. §6.1 does not validate traffic endpoints at all, so it rendered
+and validated cleanly for months. §6.0 checks them and caught it on the first render. The model
+now names the node **part** (`demoNode`) and the renderer resolves it to whatever device id it
+emits, which also keeps rendered ids out of the model as the sysml-authoring skill requires.
+
+**Still open: where the model digest lives.** It is a `# model-digest:` comment because no
+document had a field for it. A §6.0 workspace has a `.vxp` descriptor, which is the natural
+home — but adding a field there is an `ARCHITECTURE.md` §6.0 change needing the same sign-off
+any schema change does.
+
 ## M3 — analysis cases + variants (GenAI generation target; aligns with phase 2)
 
 - [x] `models/experiments/phase1-analysis-cases.sysml` (2026-07-14) — exp-001/002/002b/

@@ -82,6 +82,11 @@ jobs:
     # extractor, or a .sysml model itself fails CI instead of silently
     # breaking the pipeline again.
     #
+    # 2026-07-31: the renderer emits §6.0 workspaces, so these assertions moved from §6.1/§6.2
+    # counts (`zones`, `compute`) to workspace ones (`devices`, `slices`, `vehicles`) and now
+    # pin `kind == "workspace"` — `vxedge manifest validate` still accepts the retired shapes,
+    # so without that the job would pass on a renderer that regressed to them.
+    #
     # Requires a repo secret `VXEDGE_CROSS_REPO_TOKEN` (a PAT with read access
     # to vxedge/vxedge, since both repos are private and the default
     # GITHUB_TOKEN can't check out a sibling private repo) — provisioning that
@@ -128,7 +133,11 @@ jobs:
             --image adasProbeRr=local/vxprobe:host-process,container \
             --image centralCompute=local/placeholder:test,container
           "$VXEDGE" manifest validate --manifest /tmp/vx-vehicle-01-rendered.yaml --json | tee /tmp/vehicle-result.json
-          jq -e '.valid == true and .zones == 4 and .compute == 1' /tmp/vehicle-result.json
+          # A §6.0 workspace: four zone devices plus central compute, over the two modelled
+          # slices. `kind` must be `workspace` — if the renderer regressed to a §6.1/§6.2
+          # document, validate would still say `valid: true` (those shapes are still checked,
+          # for exactly one render away from here), so asserting the kind is what catches it.
+          jq -e '.valid == true and .kind == "workspace" and .devices == 5 and .slices == 2 and .vehicles == 1' /tmp/vehicle-result.json
       - name: Render + validate exp-pipeline-demo (M3 path)
         working-directory: vxmodels
         run: |
@@ -139,4 +148,4 @@ jobs:
             --out /tmp/exp-pipeline-demo-rendered.yaml \
             --image demoNode=local/vxprobe:host-process,container
           "$VXEDGE" manifest validate --manifest /tmp/exp-pipeline-demo-rendered.yaml --json | tee /tmp/experiment-result.json
-          jq -e '.valid == true and .zones == 1 and .kind == "experiment"' /tmp/experiment-result.json
+          jq -e '.valid == true and .kind == "workspace" and .devices == 1 and .slices == 1 and .experiment_id == "exp-pipeline-demo"' /tmp/experiment-result.json

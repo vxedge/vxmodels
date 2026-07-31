@@ -1,9 +1,16 @@
-//! `vxmodel render` — turns a `.sysml` model into a manifest YAML
-//! (docs/ARCHITECTURE.md §6), the second half of track M's model->manifest
+//! `vxmodel render` — turns a `.sysml` model into a **§6.0 workspace** YAML
+//! (docs/ARCHITECTURE.md §6.0), the second half of track M's model->manifest
 //! pipeline (§6.3): `.sysml` -> `vxmodel render` -> YAML ->
 //! `vxedge manifest validate --json`. Two model kinds, one command:
-//! `--vehicle <model.sysml>` (M2, §6.2 `VehicleManifest`) or
-//! `--experiment <model.sysml>` (M3, §6.1 `ExperimentManifest`).
+//! `--vehicle <model.sysml>` (M2, a vehicle structure model) or
+//! `--experiment <model.sysml>` (M3, a self-contained analysis case).
+//!
+//! Output is one file holding `---`-separated documents — `kind: experiment`,
+//! `kind: vehicle`, `kind: baseline` — which is a workspace, because every
+//! §6.0 reference is by id and the file boundary carries no meaning. Until
+//! 2026-07-31 this emitted §6.1/§6.2 manifests; those stopped being a
+//! provisioning input, so rendering them produced a shape nothing could run.
+//! See the `render` module for where each modelled thing lands.
 //!
 //! This is NOT a general SysML v2 parser. It's a narrow, pattern-based
 //! extractor scoped to exactly the authoring conventions the
@@ -40,10 +47,11 @@
 //!
 //! The model digest (§6.3: "YAML manifest + recorded model digest") is
 //! recorded as a `# model-digest: sha256:...` YAML comment header, not a
-//! manifest field — neither `VehicleManifest` nor `ExperimentManifest` has
-//! a digest field, and adding one is a manifest-shape change that needs
-//! ARCHITECTURE.md sign-off first (workspace CLAUDE.md hard rule), not
-//! something this renderer decides unilaterally.
+//! field — no §6.0 document has one, and adding it is a schema change that
+//! needs ARCHITECTURE.md sign-off first (workspace CLAUDE.md hard rule), not
+//! something this renderer decides unilaterally. The `.vxp` package
+//! descriptor is the natural home for it and is where that decision should
+//! land; tracked in `vxmodels/TASKS.md`.
 
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -66,7 +74,7 @@ struct ImageSpec {
     kind: String,
 }
 
-const USAGE: &str = "usage: vxmodel render (--vehicle | --experiment) <model.sysml> --out <manifest.yaml> [--image <vxid>=<url>,<kind> ...]";
+const USAGE: &str = "usage: vxmodel render (--vehicle | --experiment) <model.sysml> --out <workspace.yaml> [--image <vxid>=<url>,<kind> ...]";
 
 fn parse_args() -> Result<Args, String> {
     let mut vehicle = None;
@@ -667,15 +675,51 @@ mod extract {
     }
 }
 
-/// Renders an `extract::VehicleModel` into `VehicleManifest`-shaped YAML
-/// (docs/ARCHITECTURE.md §6.2) by hand (no serde round-trip through
-/// vxedge-core: that would make this crate depend on a sibling repo's
-/// internals across the workspace/repo boundary, which the two repos'
-/// independent-clone structure doesn't assume). Output is validated for
-/// real via `vxedge manifest validate --json` as a separate step (the
-/// sysml-authoring skill's documented double-gate command), not by this
-/// renderer — same decoupling reason.
 mod render {
+    //! Model → **§6.0 workspace** YAML.
+    //!
+    //! Written by hand rather than through a serde round-trip: that would make this crate
+    //! depend on a sibling repo's internals across the workspace/repo boundary, which the two
+    //! repos' independent-clone structure does not assume. The output is validated for real by
+    //! `vxedge manifest validate --json` as a separate step (the sysml-authoring skill's
+    //! double-gate command), not by this renderer — same decoupling reason.
+    //!
+    //! One file holding `---`-separated documents, which a workspace is allowed to be: every
+    //! reference is by id, so the file boundary carries no meaning. That is what lets a
+    //! renderer keep writing one artifact while emitting the three documents §6.0 splits an
+    //! experiment into.
+    //!
+    //! Until 2026-07-31 this emitted §6.1/§6.2 manifests. Those stopped being a provisioning
+    //! input — nothing runs them — so rendering them meant the model→manifest pipeline produced
+    //! a document shape the platform could not execute.
+    //!
+    //! # Where each modelled thing goes
+    //!
+    //! §6.0 splits what §6.1/§6.2 kept in one document, so rendering places modelled content
+    //! rather than inventing any:
+    //!
+    //! - **slices** (id, vlan, qos) → the `kind: experiment` document. In §6.2 they sat under
+    //!   the vehicle's `network:`; §6.0 is explicit that the vehicle *names* a slice and the
+    //!   experiment *defines* it, which is what makes H2's one-block comparison checkable.
+    //! - **zones** → `zones:` (regions) plus one `devices:` entry per zone node, `role:
+    //!   zone-controller`, located in that region. §6.1's `ZoneRole` conflated the two.
+    //! - **central compute** → a `devices:` entry with `role: hpc`.
+    //! - **node images** (`--image <vxid>=<url>,<kind>`) → a `kind: baseline` document, targeting
+    //!   **functions**. The caller's `,<kind>` decides both the device's `backend:` and the
+    //!   part's `kind:`: `container` → container/container, `vm`/`rtimage` → libvirt/bundle,
+    //!   which is the resolution §6.1 performed implicitly from `image.kind`.
+    //! - **a node's `function` text and `nodeType`** are descriptions, and §6.0's `functions:`
+    //!   entries carry an id rather than prose — so both are emitted as a comment above the
+    //!   function rather than dropped. `role:` stays `zone-controller` for every zone node
+    //!   regardless of the modelled `nodeType`, because that is what a node in a zone *is* in
+    //!   the architecture under study; deriving the role from a description string would give
+    //!   two structurally identical nodes different roles over a word.
+    //!
+    //! The experiment document a `--vehicle` render produces carries the modelled slices and
+    //! nothing else: a vehicle model contains no test. Its id is the vehicle's with a
+    //! `-structure` suffix — a naming convention, not modelled content, and stated in the
+    //! rendered header so nobody mistakes it for something the model said.
+
     use super::ImageSpec;
     use super::extract::VehicleModel;
     use sha2::Sha256;
@@ -683,150 +727,201 @@ mod render {
     use std::collections::BTreeMap;
     use std::fmt::Write as _;
 
+    /// `container` → (backend, part kind) = (container, container); a VM image kind → (libvirt,
+    /// bundle). §6.1 resolved this implicitly from `image.kind`; §6.0 states both explicitly,
+    /// and validates the part against the backend.
+    fn realisation(image_kind: &str) -> (&'static str, &'static str) {
+        match image_kind {
+            "container" => ("container", "container"),
+            _ => ("libvirt", "bundle"),
+        }
+    }
+
+    fn header(y: &mut String, digest: &Output<Sha256>) {
+        let _ = writeln!(y, "# model-digest: sha256:{digest:x}");
+        let _ = writeln!(
+            y,
+            "# rendered by vxmodel from a .sysml source — do not hand-edit; edit the model and re-render."
+        );
+        let _ = writeln!(
+            y,
+            "# §6.0 workspace: `---`-separated documents, each declaring its own kind and id."
+        );
+    }
+
+    fn slices_block(y: &mut String, slices: &[super::extract::SliceDef]) {
+        let _ = writeln!(y, "network:");
+        let _ = writeln!(y, "  slices:");
+        for s in slices {
+            let _ = writeln!(y, "    - id: {}", s.id);
+            let _ = writeln!(y, "      mode: vlan");
+            let _ = writeln!(y, "      vlan: {}", s.vlan);
+            let _ = writeln!(
+                y,
+                "      qos: {{ min_rate_mbps: {}, max_rate_mbps: {}, priority: {} }}",
+                s.min_rate_mbps, s.max_rate_mbps, s.priority
+            );
+        }
+    }
+
+    /// The device id a zone node renders to, and the function deployed on it.
+    fn node_ids(node: &super::extract::NodeDef) -> (String, String) {
+        let device = format!("node-{}", super::extract::camel_to_kebab(&node.part_name));
+        let function = format!("fn-{}", super::extract::camel_to_kebab(&node.part_name));
+        (device, function)
+    }
+
+    /// A vehicle structure model → a workspace: slices as the experiment, zones/devices/
+    /// functions/links as the vehicle, images as the baseline.
     pub fn to_yaml(
         model: &VehicleModel,
         images: &BTreeMap<String, ImageSpec>,
         digest: &Output<Sha256>,
     ) -> String {
         let mut y = String::new();
-        let _ = writeln!(y, "# model-digest: sha256:{digest:x}");
-        let _ = writeln!(
-            y,
-            "# rendered by vxmodel from a .sysml source — do not hand-edit; edit the model and re-render."
-        );
-        let _ = writeln!(y, "vehicle:");
-        let _ = writeln!(y, "  id: {}", yaml_str(&model.id));
-        let _ = writeln!(y, "  name: {}", yaml_str(&model.name));
-        let _ = writeln!(y);
+        header(&mut y, digest);
+        let experiment_id = format!("{}-structure", model.id);
+        let baseline_id = format!("bl-{}", model.id);
 
-        let _ = writeln!(y, "network:");
-        let _ = writeln!(y, "  slices:");
-        for s in &model.slices {
-            let _ = writeln!(y, "    - id: {}", s.id);
-            let _ = writeln!(y, "      mode: vlan");
-            let _ = writeln!(y, "      vlan: {}", s.vlan);
-            let _ = writeln!(
-                y,
-                "      qos: {{ min_rate_mbps: {}, max_rate_mbps: {}, priority: {} }}",
-                s.min_rate_mbps, s.max_rate_mbps, s.priority
-            );
+        let _ = writeln!(y, "kind: experiment");
+        let _ = writeln!(y, "id: {}", yaml_str(&experiment_id));
+        for line in [
+            "# A vehicle model carries no test. This document exists because the slices it does",
+            "# carry are experiment-level in §6.0, and because a workspace needs exactly one",
+            "# experiment to check the vehicle's slice references against. The id is derived",
+            "# from the vehicle's; the model does not name it.",
+        ] {
+            let _ = writeln!(y, "{line}");
         }
-        let _ = writeln!(y);
+        let _ = writeln!(y, "vehicles: [{}]", yaml_str(&model.id));
+        let _ = writeln!(y, "baseline: {}", yaml_str(&baseline_id));
+        slices_block(&mut y, &model.slices);
 
+        let _ = writeln!(y, "---");
+        let _ = writeln!(y, "kind: vehicle");
+        let _ = writeln!(y, "id: {}", yaml_str(&model.id));
+        let _ = writeln!(y, "name: {}", yaml_str(&model.name));
+        let _ = writeln!(y);
         let _ = writeln!(y, "zones:");
         for z in &model.zones {
-            let node = &z.node;
-            let node_id = format!("node-{}", super::extract::camel_to_kebab(&node.part_name));
-            let img = &images[&node.part_name];
-            let _ = writeln!(y, "  - id: vxzone-{}-01", z.role_kebab);
-            let _ = writeln!(y, "    role: {}", z.role_kebab);
-            let _ = writeln!(y, "    nodes:");
-            let _ = writeln!(y, "      - id: {node_id}");
-            let _ = writeln!(y, "        type: {}", node.node_type);
-            let _ = writeln!(y, "        function: {}", yaml_str(&node.function));
-            let _ = writeln!(
-                y,
-                "        image: {{ url: {}, kind: {} }}",
-                yaml_str(&img.url),
-                img.kind
-            );
-            let _ = writeln!(y, "        network:");
-            let _ = writeln!(y, "          - iface: eth0");
-            let _ = writeln!(y, "            slice: {}", node.slice_id);
+            let _ = writeln!(y, "  {}: {{}}", z.role_kebab);
         }
         let _ = writeln!(y);
-
-        let compute_img = &images["centralCompute"];
-        let _ = writeln!(y, "compute:");
-        let _ = writeln!(y, "  - id: vxcompute-central-01");
-        let _ = writeln!(y, "    name: central");
+        let _ = writeln!(y, "devices:");
+        for z in &model.zones {
+            let (device, _) = node_ids(&z.node);
+            let (backend, _) = realisation(&images[&z.node.part_name].kind);
+            let _ = writeln!(
+                y,
+                "  {device}: {{ role: zone-controller, zone: {}, backend: {backend} }}",
+                z.role_kebab
+            );
+        }
+        let (compute_backend, _) = realisation(&images["centralCompute"].kind);
         let _ = writeln!(
             y,
-            "    image: {{ url: {}, kind: {} }}",
-            yaml_str(&compute_img.url),
-            compute_img.kind
+            "  vxcompute-central-01: {{ role: hpc, backend: {compute_backend}, resources: {{ gpu: {} }} }}",
+            model.compute_gpu
         );
-        let _ = writeln!(y, "    resources: {{ gpu: {} }}", model.compute_gpu);
+        let _ = writeln!(y);
+        let _ = writeln!(y, "functions:");
+        for z in &model.zones {
+            let (device, function) = node_ids(&z.node);
+            let _ = writeln!(
+                y,
+                "  # {} (nodeType: {})",
+                z.node.function, z.node.node_type
+            );
+            let _ = writeln!(y, "  {function}: {{ deployed_on: {device} }}");
+        }
+        let _ = writeln!(
+            y,
+            "  fn-central-compute: {{ deployed_on: vxcompute-central-01 }}"
+        );
+        let _ = writeln!(y);
+        let _ = writeln!(y, "links:");
+        for z in &model.zones {
+            let (device, _) = node_ids(&z.node);
+            let _ = writeln!(
+                y,
+                "  - {{ id: link-{}, endpoints: [{device}:eth0], slice: {} }}",
+                z.role_kebab, z.node.slice_id
+            );
+        }
 
+        let _ = writeln!(y, "---");
+        let _ = writeln!(y, "kind: baseline");
+        let _ = writeln!(y, "id: {}", yaml_str(&baseline_id));
+        let _ = writeln!(y, "parts:");
+        for z in &model.zones {
+            let (_, function) = node_ids(&z.node);
+            part_entry(&mut y, &images[&z.node.part_name], &function);
+        }
+        part_entry(&mut y, &images["centralCompute"], "fn-central-compute");
         y
     }
 
-    /// Renders an `extract::AnalysisCase` into `ExperimentManifest`-shaped
-    /// YAML (§6.1). Same hand-written-YAML, no-serde-round-trip approach as
-    /// `to_yaml`, same reason (no cross-repo Rust dependency).
+    fn part_entry(y: &mut String, image: &ImageSpec, target: &str) {
+        let (_, part_kind) = realisation(&image.kind);
+        let _ = writeln!(
+            y,
+            "  - {{ ref: {}, kind: {part_kind}, target_ids: {target} }}",
+            yaml_str(&image.url)
+        );
+    }
+
+    /// An analysis case → a workspace. Same three documents; the experiment document is the
+    /// real one here, since an analysis case models a test.
     pub fn experiment_to_yaml(
         model: &super::extract::AnalysisCase,
         images: &BTreeMap<String, ImageSpec>,
         digest: &Output<Sha256>,
     ) -> String {
         let mut y = String::new();
-        let _ = writeln!(y, "# model-digest: sha256:{digest:x}");
-        let _ = writeln!(
-            y,
-            "# rendered by vxmodel from a .sysml source — do not hand-edit; edit the model and re-render."
-        );
-        let _ = writeln!(y, "experiment:");
-        let _ = writeln!(y, "  id: {}", yaml_str(&model.id));
-        let _ = writeln!(y, "  name: {}", yaml_str(&model.name));
-        let _ = writeln!(y, "  duration_s: {}", model.duration_s);
-        let _ = writeln!(
-            y,
-            "  results_prefix: {}",
-            yaml_str(&model.results.artifact_dir)
-        );
-        let _ = writeln!(y);
-
-        let _ = writeln!(y, "network:");
-        let _ = writeln!(y, "  slices:");
-        for s in &model.slices {
-            let _ = writeln!(y, "    - id: {}", s.id);
-            let _ = writeln!(y, "      mode: vlan");
-            let _ = writeln!(y, "      vlan: {}", s.vlan);
-            let _ = writeln!(
-                y,
-                "      qos: {{ min_rate_mbps: {}, max_rate_mbps: {}, priority: {} }}",
-                s.min_rate_mbps, s.max_rate_mbps, s.priority
-            );
-        }
-        let _ = writeln!(y);
-
+        header(&mut y, digest);
+        let vehicle_id = format!("{}-vehicle", model.id);
+        let baseline_id = format!("bl-{}", model.id);
         let z = &model.zone;
-        let node = &z.node;
-        let node_id = format!("node-{}", super::extract::camel_to_kebab(&node.part_name));
-        let zone_id = format!("vxzone-{}-01", z.role_kebab);
-        let img = &images[&node.part_name];
-        let _ = writeln!(y, "zones:");
-        let _ = writeln!(y, "  - id: {zone_id}");
-        let _ = writeln!(y, "    role: {}", z.role_kebab);
-        let _ = writeln!(y, "    nodes:");
-        let _ = writeln!(y, "      - id: {node_id}");
-        let _ = writeln!(y, "        type: {}", node.node_type);
-        let _ = writeln!(y, "        function: {}", yaml_str(&node.function));
-        let _ = writeln!(
-            y,
-            "        image: {{ url: {}, kind: {} }}",
-            yaml_str(&img.url),
-            img.kind
-        );
-        let _ = writeln!(y, "        network:");
-        let _ = writeln!(y, "          - iface: eth0");
-        let _ = writeln!(y, "            slice: {}", node.slice_id);
-        let _ = writeln!(y);
+        let (device, function) = node_ids(&z.node);
 
+        let _ = writeln!(y, "kind: experiment");
+        let _ = writeln!(y, "id: {}", yaml_str(&model.id));
+        let _ = writeln!(y, "name: {}", yaml_str(&model.name));
+        let _ = writeln!(y, "vehicles: [{}]", yaml_str(&vehicle_id));
+        let _ = writeln!(y, "baseline: {}", yaml_str(&baseline_id));
+        slices_block(&mut y, &model.slices);
+        let _ = writeln!(y);
         let _ = writeln!(y, "traffic_profiles:");
         let _ = writeln!(y, "  {}-load:", z.role_kebab);
-        let _ = writeln!(y, "    source: {}", yaml_str(&model.traffic.source));
-        let _ = writeln!(y, "    target: {}", yaml_str(&model.traffic.target));
+        let _ = writeln!(
+            y,
+            "    source: {}",
+            yaml_str(&traffic_endpoint(
+                &model.traffic.source,
+                &z.node.part_name,
+                &device
+            ))
+        );
+        let _ = writeln!(
+            y,
+            "    target: {}",
+            yaml_str(&traffic_endpoint(
+                &model.traffic.target,
+                &z.node.part_name,
+                &device
+            ))
+        );
         let _ = writeln!(y, "    bandwidth_mbps: {}", model.traffic.bandwidth_mbps);
         let _ = writeln!(y, "    payload_bytes: {}", model.traffic.payload_bytes);
         let _ = writeln!(y);
-
+        let _ = writeln!(y, "method:");
+        let _ = writeln!(y, "  duration_s: {}", model.duration_s);
+        let _ = writeln!(y);
         let _ = writeln!(y, "telemetry:");
         let _ = writeln!(y, "  prometheus:");
         let _ = writeln!(y, "    scrape_targets:");
         let _ = writeln!(y, "      - {}", yaml_str(&model.scrape_target));
         let _ = writeln!(y);
-
         let _ = writeln!(y, "results:");
         let _ = writeln!(
             y,
@@ -835,7 +930,59 @@ mod render {
         );
         let _ = writeln!(y, "  upload: {}", model.results.upload);
 
+        let (backend, _) = realisation(&images[&z.node.part_name].kind);
+        let _ = writeln!(y, "---");
+        let _ = writeln!(y, "kind: vehicle");
+        let _ = writeln!(y, "id: {}", yaml_str(&vehicle_id));
+        for line in [
+            "# An analysis case models the system under test inline. The id is derived from the",
+            "# case's; the model does not name a separate vehicle.",
+        ] {
+            let _ = writeln!(y, "{line}");
+        }
+        let _ = writeln!(y, "zones:");
+        let _ = writeln!(y, "  {}: {{}}", z.role_kebab);
+        let _ = writeln!(y, "devices:");
+        let _ = writeln!(
+            y,
+            "  {device}: {{ role: zone-controller, zone: {}, backend: {backend} }}",
+            z.role_kebab
+        );
+        let _ = writeln!(y, "functions:");
+        let _ = writeln!(
+            y,
+            "  # {} (nodeType: {})",
+            z.node.function, z.node.node_type
+        );
+        let _ = writeln!(y, "  {function}: {{ deployed_on: {device} }}");
+        let _ = writeln!(y, "links:");
+        let _ = writeln!(
+            y,
+            "  - {{ id: link-{}, endpoints: [{device}:eth0], slice: {} }}",
+            z.role_kebab, z.node.slice_id
+        );
+
+        let _ = writeln!(y, "---");
+        let _ = writeln!(y, "kind: baseline");
+        let _ = writeln!(y, "id: {}", yaml_str(&baseline_id));
+        let _ = writeln!(y, "parts:");
+        part_entry(&mut y, &images[&z.node.part_name], &function);
         y
+    }
+
+    /// A modelled traffic endpoint → a §6.0 one.
+    ///
+    /// The model names a node *part*, because rendered device ids do not belong in a model
+    /// (the sysml-authoring rule), so the renderer resolves it to whatever id it emitted.
+    /// Anything else — `internet`, `carla` — passes through untouched, including a name that
+    /// resolves to nothing: rewriting an unresolvable endpoint would hide it, and §6.0's
+    /// validator reports it against the document the author can act on.
+    fn traffic_endpoint(modelled: &str, part_name: &str, device_id: &str) -> String {
+        if modelled == part_name {
+            device_id.to_string()
+        } else {
+            modelled.to_string()
+        }
     }
 
     fn yaml_str(s: &str) -> String {
@@ -891,8 +1038,11 @@ mod tests {
         assert_eq!(model.compute_gpu, "passthrough");
     }
 
+    /// The rendered document has to be a *workspace*, not merely YAML: three documents, the
+    /// ids joined up, and every modelled value carried across. Whether `vxedge` accepts it is
+    /// the CI pipeline's job (gate 2) — this pins the shape so a break is attributable here.
     #[test]
-    fn to_yaml_produces_a_manifest_shaped_document() {
+    fn to_yaml_produces_a_workspace() {
         let source = std::fs::read_to_string(
             std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../models/vehicles/vx-vehicle-01.sysml"),
@@ -913,13 +1063,55 @@ mod tests {
         let yaml = render::to_yaml(&model, &images, &digest);
 
         assert!(yaml.starts_with("# model-digest: sha256:"));
-        assert!(yaml.contains("vehicle:"));
+        // Three documents, and the joins between them.
+        assert_eq!(yaml.matches("\n---\n").count(), 2, "{yaml}");
+        assert!(yaml.contains("kind: experiment"));
+        assert!(yaml.contains("kind: vehicle"));
+        assert!(yaml.contains("kind: baseline"));
         assert!(yaml.contains("id: \"vx-vehicle-01\""));
-        assert!(yaml.contains("vxzone-front-left-01"));
+        assert!(yaml.contains("vehicles: [\"vx-vehicle-01\"]"));
+        assert!(yaml.contains("baseline: \"bl-vx-vehicle-01\""));
+        // Slices are experiment-level in §6.0; the vehicle only names them.
+        assert!(yaml.contains("- id: adas"));
         assert!(yaml.contains("slice: adas"));
         assert!(yaml.contains("slice: infotainment"));
-        assert!(yaml.contains("vxcompute-central-01"));
+        // Zones are regions; devices are located in them.
+        assert!(yaml.contains("  front-left: {}"));
+        assert!(yaml.contains("node-adas-probe-fl: { role: zone-controller, zone: front-left"));
+        assert!(yaml.contains("vxcompute-central-01: { role: hpc"));
         assert!(yaml.contains("gpu: passthrough"));
+        // Parts target functions, and state what they are.
+        assert!(yaml.contains("target_ids: fn-adas-probe-fl"));
+        assert!(yaml.contains("kind: container"));
+        // Modelled prose has nowhere to go in §6.0, so it is kept as a comment, not dropped.
+        assert!(yaml.contains("# front-left ADAS-representative probe endpoint (vxprobe)"));
+    }
+
+    /// A container image renders a container backend and a container part; a VM image kind
+    /// renders libvirt and a bundle. §6.1 resolved this implicitly from `image.kind`, and
+    /// losing it is what let a VM node plan with no bundle to boot.
+    #[test]
+    fn the_image_kind_decides_both_the_backend_and_the_part_kind() {
+        let source = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../models/vehicles/vx-vehicle-01.sysml"),
+        )
+        .unwrap();
+        let model = extract::VehicleModel::parse(&source).unwrap();
+        let mut images = BTreeMap::new();
+        for vxid in model.required_vxids() {
+            images.insert(
+                vxid.to_string(),
+                ImageSpec {
+                    url: "./bundle".to_string(),
+                    kind: "rtimage".to_string(),
+                },
+            );
+        }
+        let yaml = render::to_yaml(&model, &images, &Sha256::digest(source.as_bytes()));
+        assert!(yaml.contains("backend: libvirt"), "{yaml}");
+        assert!(yaml.contains("kind: bundle"), "{yaml}");
+        assert!(!yaml.contains("backend: container"), "{yaml}");
     }
 
     #[test]
@@ -968,7 +1160,11 @@ package X {
         assert_eq!(model.zone.node.slice_id, "demo");
         assert_eq!(model.slices.len(), 1);
         assert_eq!(model.slices[0].vlan, 101);
-        assert_eq!(model.traffic.source, "vxzone-demo-01:node-demo-01");
+        // The model names a node *part*; rendered device ids do not belong in a model. It
+        // named §6.1's synthesized `<zone>:<node>` form until 2026-07-31 — a form the renderer
+        // never actually emitted, which §6.1 validation could not catch because it does not
+        // check traffic endpoints at all.
+        assert_eq!(model.traffic.source, "demoNode");
         assert_eq!(model.traffic.target, "internet");
         assert_eq!(model.traffic.bandwidth_mbps, 50);
         assert_eq!(model.scrape_target, "127.0.0.1:9801");
@@ -977,7 +1173,7 @@ package X {
     }
 
     #[test]
-    fn experiment_to_yaml_produces_a_manifest_shaped_document() {
+    fn experiment_to_yaml_produces_a_workspace() {
         let source = std::fs::read_to_string(
             std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../models/experiments/exp-pipeline-demo.sysml"),
@@ -998,17 +1194,26 @@ package X {
         let yaml = render::experiment_to_yaml(&model, &images, &digest);
 
         assert!(yaml.starts_with("# model-digest: sha256:"));
-        assert!(yaml.contains("experiment:"));
+        assert_eq!(yaml.matches("\n---\n").count(), 2, "{yaml}");
+        assert!(yaml.contains("kind: experiment"));
         assert!(yaml.contains("id: \"exp-pipeline-demo\""));
-        assert!(yaml.contains("duration_s: 30"));
-        assert!(yaml.contains("vxzone-front-left-01"));
+        assert!(yaml.contains("vehicles: [\"exp-pipeline-demo-vehicle\"]"));
+        // `duration_s` is under `method:` in §6.0, not under `experiment:`.
+        assert!(yaml.contains("method:\n  duration_s: 30"), "{yaml}");
+        assert!(yaml.contains("kind: vehicle"));
+        assert!(yaml.contains("node-demo-node: { role: zone-controller, zone: front-left"));
         assert!(yaml.contains("slice: demo"));
-        assert!(yaml.contains("traffic_profiles:"));
+        // The modelled traffic source names a part; the renderer resolves it to the device id
+        // it emitted, so the profile actually points at something.
+        assert!(yaml.contains("source: \"node-demo-node\""), "{yaml}");
+        assert!(yaml.contains("target: \"internet\""));
         assert!(yaml.contains("bandwidth_mbps: 50"));
         assert!(yaml.contains("telemetry:"));
         assert!(yaml.contains("127.0.0.1:9801"));
         assert!(yaml.contains("results:"));
         assert!(yaml.contains("upload: false"));
+        assert!(yaml.contains("kind: baseline"));
+        assert!(yaml.contains("target_ids: fn-demo-node"));
     }
 
     #[test]
