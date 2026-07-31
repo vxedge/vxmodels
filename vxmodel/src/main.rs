@@ -281,9 +281,9 @@ mod extract {
         pub upload: bool,
     }
 
-    /// An `analysis def` extracted 1:1 into `ExperimentManifest` shape (§6.1).
-    /// See the module doc: scoped to fully self-contained analysis cases only
-    /// (every field modeled), not the methodology-only shape
+    /// An `analysis def` extracted 1:1 into a §6.0 workspace's experiment
+    /// document. See the module doc: scoped to fully self-contained analysis
+    /// cases only (every field modeled), not the methodology-only shape
     /// `exp-010-h2-real-slicing.sysml` uses.
     #[derive(Debug)]
     pub struct AnalysisCase {
