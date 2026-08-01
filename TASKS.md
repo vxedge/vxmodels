@@ -133,10 +133,39 @@ and validated cleanly for months. §6.0 checks them and caught it on the first r
 now names the node **part** (`demoNode`) and the renderer resolves it to whatever device id it
 emits, which also keeps rendered ids out of the model as the sysml-authoring skill requires.
 
-**Still open: where the model digest lives.** It is a `# model-digest:` comment because no
-document had a field for it. A §6.0 workspace has a `.vxp` descriptor, which is the natural
-home — but adding a field there is an `ARCHITECTURE.md` §6.0 change needing the same sign-off
-any schema change does.
+### KNOWN LIMITATION — a rendered workspace validates but cannot be run (deferred to phase 3)
+
+`vxmodel render` emits the three workspace documents and **no `.vxp`**. A workspace needs one to
+be addressable, so:
+
+```
+$ cd <rendered output> && vxedge experiment validate
+error: no vxedge experiment workspace found: expected a `.vxp` file here.
+```
+
+**`pipeline-regression` does not catch this and is green anyway**, because it calls
+`vxedge manifest validate --manifest <file>`, which works on a loose file and never tries to run
+one. Read the job as "the renderer emits a well-formed workspace", not "the model→experiment
+pipeline works end to end" — the second is not yet true.
+
+Deferred to **phase 3** by owner decision (2026-08-01): nothing in phase 2 comes from the
+renderer — all five phase-2 experiments are hand-authored — so this blocks nothing now. It is
+recorded rather than left to be rediscovered.
+
+The fix, when phase 3 takes it:
+
+- [ ] Render a `.vxp` alongside the documents, carrying a `provenance` block: `model` (source
+      path), `model_digest`, `rendered_by`. That makes the output runnable *and* settles where
+      the digest lives — machine-readable in the descriptor instead of a `# model-digest:`
+      comment no tool can read, which is where it sits today only because every document type
+      sets `deny_unknown_fields` and there is nowhere else to put it. The workspace identity
+      hash (`ARCHITECTURE.md` §13) covers the `.vxp`, so the recorded digest becomes
+      tamper-evident for free.
+- [ ] Adding the block is an `ARCHITECTURE.md` §6.0 schema change and needs owner sign-off
+      first, per the workspace hard rule.
+- [ ] Extend `pipeline-regression` to assert the rendered workspace *runs* — `experiment
+      validate` from inside it, not `manifest validate` on the file. The absence of that
+      assertion is exactly what let this sit unnoticed.
 
 ## M3 — analysis cases + variants (GenAI generation target; aligns with phase 2)
 

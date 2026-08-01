@@ -138,6 +138,11 @@ jobs:
           # document, validate would still say `valid: true` (those shapes are still checked,
           # for exactly one render away from here), so asserting the kind is what catches it.
           jq -e '.valid == true and .kind == "workspace" and .devices == 5 and .slices == 2 and .vehicles == 1' /tmp/vehicle-result.json
+      # NOTE: both steps below validate the rendered *file*; neither runs the rendered
+      # workspace. The renderer emits no `.vxp`, so a rendered workspace cannot currently be
+      # addressed by `vxedge experiment up|validate` at all — a green run here means "the
+      # renderer emits well-formed documents", not "the pipeline works end to end". Known
+      # limitation, deferred to phase 3, recorded in TASKS.md.
       - name: Render + validate exp-pipeline-demo (M3 path)
         working-directory: vxmodels
         run: |
