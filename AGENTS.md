@@ -59,7 +59,7 @@ narrow, single-file, pattern-based extractor scoped to this repo's own
 resolve cross-file `private import`s, so a concrete (value-bearing) interface def has to
 live in the same file it's rendered from; purely structural defs are fine to import.
 Images are a required, explicit CLI input, never invented — the model doesn't carry them
-by rule (§ below), and no real vxzones/vxcompute image exists yet for these nodes.
+by rule (§ below), and no real `vxparts` image exists yet for these nodes.
 `cd vxmodel && cargo build / test / clippy --all-targets -- -D warnings / fmt --check`
 (own `rust-toolchain.toml`, pinned 1.96.1 to match `vxedge`'s).
 
