@@ -27,7 +27,7 @@ GenAI double gate), §4 (single-source rules), §15 track M (M0–M4 roadmap).
 - **GenAI double gate** (§6.3): generated experiments clear model typing first, manifest
   validation second, before touching the testbed. Never bypass either gate.
 - **Terminology**: vxedge is a *model-governed executable virtual prototype*. "Digital
-  twin" is reserved for phase-4 hardware parity (`docs/PUBLICATION.md` terminology rule)
+  twin" is reserved for phase-4 hardware parity (`docs/ROADMAP.md` terminology rule)
   — never use it in this repo's docs or model comments before then.
 - Out of model scope, by rule: Rust internals, the vxAPI IDL (Protobuf stays the
   contract), anything zone/compute manifests own.

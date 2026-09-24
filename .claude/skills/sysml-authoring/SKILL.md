@@ -50,7 +50,7 @@ images/node IDs (zone/compute manifests own those — reference them, never rest
 - **Traceability is bidirectional by digest**: a `verify` link carries the archive's
   manifest sha256; a rendered manifest carries the model digest. Never link by name only.
 - **Terminology**: model comments and doc strings say *executable virtual prototype*;
-  "digital twin" is reserved until phase-4 hardware parity (`docs/PUBLICATION.md`).
+  "digital twin" is reserved until phase-4 hardware parity (`docs/ROADMAP.md`).
 
 ## The double gate (non-negotiable, especially for generated models)
 

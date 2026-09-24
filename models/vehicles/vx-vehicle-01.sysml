@@ -19,7 +19,7 @@
 // reference vehicle's structure is a separate, later addition once a real
 // vx-vehicle-01 experiment needs it — modeling it now would overclaim
 // readiness). centralCompute mirrors the manifest's `compute[]` slot only
-// structurally: vxcompute has zero code as of 2026-07-19 (docs/STATUS.md),
+// structurally: vxcompute has zero code as of 2026-07-19 (docs/RESULTS.md),
 // so this is not a claim that Autoware/ROS2/CARLA run today.
 //
 // This is the design authority; `vxmodel render` (M2, not yet built) turns

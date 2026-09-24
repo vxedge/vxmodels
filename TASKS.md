@@ -1,8 +1,8 @@
 # TASKS.md — vxedge/vxmodels
 
 Track M work items (cross-cutting; gates nothing in phases 1–4). Program-level view:
-`docs/TASKS.md` "Track M"; spec: `docs/ARCHITECTURE.md` §6.3 + §15. Feeds paper #3
-(`docs/PUBLICATION.md` §3b).
+`docs/ROADMAP.md` "Track M"; spec: `docs/ARCHITECTURE.md` §6.3 + §15. Feeds paper #3
+(`docs/ROADMAP.md` §3b).
 
 ## M0 — governance & home
 
@@ -209,7 +209,7 @@ The fix, when phase 3 takes it:
       doc comment updated to the final result, narrating the trajectory
       rather than just the destination. Both files reverified clean
       against the pinned SysIDE toolchain after every edit. Full account:
-      `docs/STATUS.md`, `vxedge/TASKS.md`, `vxperiments/TASKS.md`
+      `docs/RESULTS.md`, `vxedge/TASKS.md`, `vxperiments/TASKS.md`
 - [x] First LLM-generated experiment passes both gates and runs end-to-end — **delivered
       2026-07-19, both gates live-verified end to end**:
       `models/experiments/exp-pipeline-demo.sysml` (new `PipelineDemoCase` analysis def) +

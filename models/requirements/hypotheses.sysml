@@ -5,7 +5,7 @@
 // manifest sha256, never a name.
 //
 // Terminology: this models an *executable virtual prototype*. The term "digital twin"
-// is reserved until phase-4 hardware parity (docs/PUBLICATION.md terminology rule).
+// is reserved until phase-4 hardware parity (docs/ROADMAP.md terminology rule).
 
 package VxedgeHypotheses {
 

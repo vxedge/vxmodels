@@ -6,6 +6,10 @@ All notable changes to this repo are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- Open-source release preparation: `LICENSE` (Apache-2.0), `NOTICE`, rewritten `README.md`.
+
 ### Changed
 
 - **BREAKING: `vxmodel render` emits a §6.0 workspace**, not a §6.1/§6.2 manifest. One file of

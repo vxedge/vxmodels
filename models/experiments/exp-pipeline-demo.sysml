@@ -9,7 +9,7 @@
 // profiles, or telemetry in the model at all, because phase1-analysis-cases.sysml
 // and exp-010 were both authored to capture the *varied dimension*, not the full
 // manifest shape. Re-deriving exp-010.yaml from a grown model would mean
-// touching frozen H2 evidence (verdict: HOLDS, docs/STATUS.md) — out of scope
+// touching frozen H2 evidence (verdict: HOLDS, docs/RESULTS.md) — out of scope
 // here by workspace rule. Building a general renderer that also handles that
 // methodology-only shape is a separate, larger design question, left open in
 // vxmodels/TASKS.md M3 rather than solved by this file.
