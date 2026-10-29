@@ -1,12 +1,12 @@
-//! `vxmodel render` — turns a `.sysml` model into a **§6.0 workspace** YAML
+//! `vxmodel render`: turns a `.sysml` model into a **§6.0 workspace** YAML
 //! (docs/ARCHITECTURE.md §6.0), the second half of track M's model->manifest
 //! pipeline (§6.3): `.sysml` -> `vxmodel render` -> YAML ->
 //! `vxedge manifest validate --json`. Two model kinds, one command:
 //! `--vehicle <model.sysml>` (M2, a vehicle structure model) or
 //! `--experiment <model.sysml>` (M3, a self-contained analysis case).
 //!
-//! Output is one file holding `---`-separated documents — `kind: experiment`,
-//! `kind: vehicle`, `kind: baseline` — which is a workspace, because every
+//! Output is one file holding `---`-separated documents (`kind: experiment`,
+//! `kind: vehicle`, `kind: baseline`), which is a workspace, because every
 //! §6.0 reference is by id and the file boundary carries no meaning. Until
 //! 2026-07-31 this emitted §6.1/§6.2 manifests; those stopped being a
 //! provisioning input, so rendering them produced a shape nothing could run.
@@ -17,29 +17,29 @@
 //! `sysml-authoring` skill enforces in this project's `.sysml` files (fixed
 //! `attribute :>> name = value;` redefinition shape, fixed part/interface/
 //! port nesting). A model that doesn't follow those conventions won't
-//! render — that's a real, stated limitation, not a bug to silently paper
+//! render: that's a real, stated limitation, not a bug to silently paper
 //! over (testbed-quality: fidelity caveats stated honestly). One consequence
-//! worth stating plainly: extraction is single-file — a `.sysml` file's
+//! worth stating plainly: extraction is single-file: a `.sysml` file's
 //! `private import`s are resolved by the real SysIDE gate (gate 1) but NOT
 //! by this text-pattern extractor, so a concrete (value-bearing) interface
 //! def has to live in the same file it's rendered from. Purely structural
 //! defs (part/port/enum shapes with no data) are fine to import, since only
-//! their names are ever pattern-matched, never their bodies — see
+//! their names are ever pattern-matched, never their bodies; see
 //! `models/experiments/exp-pipeline-demo.sysml`'s header for a worked
 //! example of the line between the two.
 //!
 //! `--experiment` is scoped narrower still, on purpose: it renders analysis
-//! cases that are fully self-contained (every manifest field — zones,
-//! traffic_profiles, telemetry, results — modeled 1:1), not the
+//! cases that are fully self-contained (every manifest field modeled 1:1: zones,
+//! traffic_profiles, telemetry, results), not the
 //! methodology-only analysis cases in `phase1-analysis-cases.sysml` or
 //! `exp-010-h2-real-slicing.sysml` (those model a varied dimension and a
-//! campaign frame, not a topology) — rendering that second shape, and how an
+//! campaign frame, not a topology); rendering that second shape, and how an
 //! open variant dimension collapses to one concrete manifest, is a separate,
 //! larger design question left open in `vxmodels/TASKS.md` M3, not solved
 //! here.
 //!
 //! Images are deliberately NOT modeled in `.sysml` (sysml-authoring skill:
-//! "images/node IDs — zone/compute manifests own those, reference them,
+//! "images/node IDs: zone/compute manifests own those, reference them,
 //! never restate them"). No real vxzones/vxcompute manifest exists yet for
 //! these nodes, so this renderer refuses to invent plausible-looking
 //! image URLs; the caller supplies them via `--image <vxid>=<url>,<kind>`
@@ -47,7 +47,7 @@
 //!
 //! The model digest (§6.3: "YAML manifest + recorded model digest") is
 //! recorded as a `# model-digest: sha256:...` YAML comment header, not a
-//! field — no §6.0 document has one, and adding it is a schema change that
+//! field: no §6.0 document has one, and adding it is a schema change that
 //! needs ARCHITECTURE.md sign-off first (workspace CLAUDE.md hard rule), not
 //! something this renderer decides unilaterally. The `.vxp` package
 //! descriptor is the natural home for it and is where that decision should
@@ -237,7 +237,7 @@ fn check_missing_images(
         None
     } else {
         eprintln!(
-            "error: no --image supplied for: {} (this renderer never invents image URLs — see the file header doc)",
+            "error: no --image supplied for: {} (this renderer never invents image URLs; see the file header doc)",
             missing.join(", ")
         );
         Some(ExitCode::FAILURE)
@@ -448,7 +448,7 @@ mod extract {
 
         let (_, n_open, n_close) = block_at(zone_block, ": ZoneNode :>> nodes {", 0)
             .ok_or("zone usage has no `: ZoneNode :>> nodes { ... }` node")?;
-        // The part usage name sits just before " : ZoneNode" — walk back
+        // The part usage name sits just before " : ZoneNode"; walk back
         // from the marker start over the preceding identifier.
         let marker_start = zone_block[..n_open + 1]
             .rfind(": ZoneNode :>> nodes {")
@@ -694,7 +694,7 @@ mod render {
     //! depend on a sibling repo's internals across the workspace/repo boundary, which the two
     //! repos' independent-clone structure does not assume. The output is validated for real by
     //! `vxedge manifest validate --json` as a separate step (the sysml-authoring skill's
-    //! double-gate command), not by this renderer — same decoupling reason.
+    //! double-gate command), not by this renderer: same decoupling reason.
     //!
     //! One file holding `---`-separated documents, which a workspace is allowed to be: every
     //! reference is by id, so the file boundary carries no meaning. That is what lets a
@@ -702,7 +702,7 @@ mod render {
     //! experiment into.
     //!
     //! Until 2026-07-31 this emitted §6.1/§6.2 manifests. Those stopped being a provisioning
-    //! input — nothing runs them — so rendering them meant the model→manifest pipeline produced
+    //! input (nothing runs them), so rendering them meant the model→manifest pipeline produced
     //! a document shape the platform could not execute.
     //!
     //! # Where each modelled thing goes
@@ -721,7 +721,7 @@ mod render {
     //!   part's `kind:`: `container` → container/container, `vm`/`rtimage` → libvirt/bundle,
     //!   which is the resolution §6.1 performed implicitly from `image.kind`.
     //! - **a node's `function` text and `nodeType`** are descriptions, and §6.0's `functions:`
-    //!   entries carry an id rather than prose — so both are emitted as a comment above the
+    //!   entries carry an id rather than prose: so both are emitted as a comment above the
     //!   function rather than dropped. `role:` stays `zone-controller` for every zone node
     //!   regardless of the modelled `nodeType`, because that is what a node in a zone *is* in
     //!   the architecture under study; deriving the role from a description string would give
@@ -729,7 +729,7 @@ mod render {
     //!
     //! The experiment document a `--vehicle` render produces carries the modelled slices and
     //! nothing else: a vehicle model contains no test. Its id is the vehicle's with a
-    //! `-structure` suffix — a naming convention, not modelled content, and stated in the
+    //! `-structure` suffix: a naming convention, not modelled content, and stated in the
     //! rendered header so nobody mistakes it for something the model said.
 
     use super::ImageSpec;
@@ -753,7 +753,7 @@ mod render {
         let _ = writeln!(y, "# model-digest: sha256:{digest:x}");
         let _ = writeln!(
             y,
-            "# rendered by vxmodel from a .sysml source — do not hand-edit; edit the model and re-render."
+            "# rendered by vxmodel from a .sysml source. Do not hand-edit: edit the model and re-render."
         );
         let _ = writeln!(
             y,
@@ -986,7 +986,7 @@ mod render {
     ///
     /// The model names a node *part*, because rendered device ids do not belong in a model
     /// (the sysml-authoring rule), so the renderer resolves it to whatever id it emitted.
-    /// Anything else — `internet`, `carla` — passes through untouched, including a name that
+    /// Anything else (`internet`, `carla`) passes through untouched, including a name that
     /// resolves to nothing: rewriting an unresolvable endpoint would hide it, and §6.0's
     /// validator reports it against the document the author can act on.
     fn traffic_endpoint(modelled: &str, part_name: &str, device_id: &str) -> String {
@@ -1052,7 +1052,7 @@ mod tests {
 
     /// The rendered document has to be a *workspace*, not merely YAML: three documents, the
     /// ids joined up, and every modelled value carried across. Whether `vxedge` accepts it is
-    /// the CI pipeline's job (gate 2) — this pins the shape so a break is attributable here.
+    /// the CI pipeline's job (gate 2): this pins the shape so a break is attributable here.
     #[test]
     fn to_yaml_produces_a_workspace() {
         let source = std::fs::read_to_string(
@@ -1173,7 +1173,7 @@ package X {
         assert_eq!(model.slices.len(), 1);
         assert_eq!(model.slices[0].vlan, 101);
         // The model names a node *part*; rendered device ids do not belong in a model. It
-        // named §6.1's synthesized `<zone>:<node>` form until 2026-07-31 — a form the renderer
+        // named §6.1's synthesized `<zone>:<node>` form until 2026-07-31: a form the renderer
         // never actually emitted, which §6.1 validation could not catch because it does not
         // check traffic endpoints at all.
         assert_eq!(model.traffic.source, "demoNode");

@@ -10,7 +10,7 @@ jobs:
     name: SysML v2 parse/type gate
     runs-on: ubuntu-latest
     env:
-      # Pinned toolchain (docs/TESTBED-SETUP.md Tier M) — bump deliberately, digests first.
+      # Pinned toolchain (docs/TESTBED-SETUP.md Tier M): bump deliberately, digests first.
       SYSIDE_URL: https://github.com/sensmetry/sysml-2ls/releases/download/0.9.1/syside-languageserver.zip
       SYSIDE_SHA256: 1c3da42826d67b2a44b897515e068ad8ee0a038ec003a06659427ed77f3af8d2
       STDLIB_URL: https://github.com/Systems-Modeling/SysML-v2-Release/archive/refs/tags/2026-04.tar.gz
@@ -57,7 +57,7 @@ jobs:
       - name: Test
         # Exercises gate 1's output shape: renders the real vx-vehicle-01.sysml
         # and checks the emitted YAML. Gate 2 (`vxedge manifest validate --json`
-        # against the render) is NOT wired into this job — it needs the vxedge
+        # against the render) is NOT wired into this job: it needs the vxedge
         # repo's CLI, a separate clone/build this repo's CI doesn't own (§4
         # single-source rules: this repo doesn't build vxedge's binary). Run it
         # manually per the sysml-authoring skill's double-gate command, or from
@@ -88,13 +88,13 @@ jobs:
     # build. Checks out both repos side by side and runs the exact double-gate
     # pipeline documented in sysml-authoring, for every committed renderable
     # model, asserting the same shape verified by hand when M2/M3 landed
-    # (2026-07-19) — so a future change to vxedge-core's validation, vxmodel's
+    # (2026-07-19), so a future change to vxedge-core's validation, vxmodel's
     # extractor, or a .sysml model itself fails CI instead of silently
     # breaking the pipeline again.
     #
     # 2026-07-31: the renderer emits §6.0 workspaces, so these assertions moved from §6.1/§6.2
     # counts (`zones`, `compute`) to workspace ones (`devices`, `slices`, `vehicles`) and now
-    # pin `kind == "workspace"` — `vxedge manifest validate` still accepts the retired shapes,
+    # pin `kind == "workspace"`: `vxedge manifest validate` still accepts the retired shapes,
     # so without that the job would pass on a renderer that regressed to them.
     steps:
       - name: Checkout vxmodels
@@ -137,13 +137,13 @@ jobs:
             --image centralCompute=local/placeholder:test,container
           "$VXEDGE" manifest validate --manifest /tmp/vx-vehicle-01-rendered.yaml --json | tee /tmp/vehicle-result.json
           # A §6.0 workspace: four zone devices plus central compute, over the two modelled
-          # slices. `kind` must be `workspace` — if the renderer regressed to a §6.1/§6.2
+          # slices. `kind` must be `workspace`; if the renderer regressed to a §6.1/§6.2
           # document, validate would still say `valid: true` (those shapes are still checked,
           # for exactly one render away from here), so asserting the kind is what catches it.
           jq -e '.valid == true and .kind == "workspace" and .devices == 5 and .slices == 2 and .vehicles == 1' /tmp/vehicle-result.json
       # NOTE: both steps below validate the rendered *file*; neither runs the rendered
       # workspace. The renderer emits no `.vxp`, so a rendered workspace cannot currently be
-      # addressed by `vxedge experiment up|validate` at all — a green run here means "the
+      # addressed by `vxedge experiment up|validate` at all; a green run here means "the
       # renderer emits well-formed documents", not "the pipeline works end to end". Known
       # limitation, deferred to phase 3, recorded in TASKS.md.
       - name: Render + validate exp-pipeline-demo (M3 path)
