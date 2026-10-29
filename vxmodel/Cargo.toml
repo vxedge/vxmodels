@@ -1,6 +1,8 @@
 [package]
 name = "vxmodel"
-description = "vxedge track M — renders vx-vehicle-*.sysml structure models into vehicle manifests (§6.2)"
+description = "vxedge track M: renders SysML v2 vehicle and experiment models into vxedge workspaces (§6.0)"
+license = "Apache-2.0"
+repository = "https://github.com/vxedge/vxmodels"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.96.1"
