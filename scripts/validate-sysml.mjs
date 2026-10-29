@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// validate-sysml.mjs — headless SysML v2 parse/typing gate (the model half of the
+// validate-sysml.mjs: headless SysML v2 parse/typing gate (the model half of the
 // double gate, sysml-authoring skill).
 //
 // Drives the SysIDE language server (Sensmetry sysml-2ls) over LSP stdio: opens
 // every .sysml file passed on the command line, collects publishDiagnostics, and
 // exits non-zero if any file produces an error-severity diagnostic. SysIDE has no
-// one-shot CLI mode (LSP only), hence this driver. No npm dependencies — plain
+// one-shot CLI mode (LSP only), hence this driver. No npm dependencies: plain
 // JSON-RPC over stdio.
 //
 // Usage:
@@ -47,7 +47,7 @@ function notify(method, params) {
 }
 
 // diagnostics per URI; SysIDE (Langium) publishes after didOpen and again after
-// full workspace/stdlib indexing settles — keep the LAST set per URI.
+// full workspace/stdlib indexing settles: keep the LAST set per URI.
 const diags = new Map();
 let buf = Buffer.alloc(0);
 server.stdout.on("data", (chunk) => {

@@ -1,5 +1,5 @@
-// vxedge track M — M1 retroactive traceability model (requirements half).
-// Requirement wording is VERBATIM from docs/ARCHITECTURE.md §2 — the model records,
+// vxedge track M: M1 retroactive traceability model (requirements half).
+// Requirement wording is VERBATIM from docs/ARCHITECTURE.md §2: the model records,
 // it does not rephrase (sysml-authoring skill rule). Verification evidence lives in
 // verification.sysml; the join key between model and evidence is the experiment
 // manifest sha256, never a name.
@@ -17,8 +17,8 @@ package VxedgeHypotheses {
 
 	requirement def H2RealSlicing {
 		doc /* H2 (real slicing vs. static mapping): True 5G slicing (S-NSSAI PDU
-		     sessions via Open5GS + UERANSIM) provides measurably different — and
-		     under contention, stronger — isolation than static VLAN-to-slice
+		     sessions via Open5GS + UERANSIM) provides measurably different, and
+		     under contention, stronger, isolation than static VLAN-to-slice
 		     mapping. */
 	}
 
@@ -37,15 +37,15 @@ package VxedgeHypotheses {
 	requirement h1 : H1Isolation;
 
 	requirement h2 : H2RealSlicing {
-		doc /* HOLDS — final verdict 2026-07-18 (exp-010, snssai arm; vlan arm =
+		doc /* HOLDS: final verdict 2026-07-18 (exp-010, snssai arm; vlan arm =
 		     exp-001's own frozen numbers). Real, kernel-level per-slice isolation
 		     (gateway::provision::apply_fiveg_slice_qos, an HTB tree on the
 		     host-side fiveg uplink mirroring the vlan arm's own apply_slices
 		     mechanism) delivers adas p99 growth of 1.00x baseline->600mbit vs the
-		     vlan arm's own 0.93x — comfortably inside tolerance. Not the first
+		     vlan arm's own 0.93x, comfortably inside tolerance. Not the first
 		     verdict this hypothesis got the same day: an earlier same-day campaign
 		     found DOES NOT HOLD with a code-verified root cause (fiveg rendered no
-		     per-slice QoS at all — an unequal comparison, not evidence against the
+		     per-slice QoS at all: an unequal comparison, not evidence against the
 		     hypothesis); the fix that closed that gap was itself checked
 		     empirically before trusting it (Open5GS's own subscriber AMBR field
 		     was confirmed live to be recorded but not enforced, so the fix is

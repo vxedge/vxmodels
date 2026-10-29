@@ -1,4 +1,4 @@
-# cargo-deny configuration — supply-chain hygiene (advisories, licenses, sources).
+# cargo-deny configuration: supply-chain hygiene (advisories, licenses, sources).
 # Run locally: cargo deny check   (CI runs it on every push/PR)
 
 [graph]

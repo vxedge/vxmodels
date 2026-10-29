@@ -1,23 +1,23 @@
-// vxedge track M — M2 structure model: vx-vehicle-01, the OEM-representative
+// vxedge track M: M2 structure model: vx-vehicle-01, the OEM-representative
 // zonal E/E reference vehicle (docs/ARCHITECTURE.md §6.2). Zones/nodes are
 // `part` defs, slices+QoS are typed `interface` defs, per the sysml-authoring
 // skill's construct mapping table. The `links` harness (the table's third
 // row, `connection` usages) is NOT modeled here: no real experiment manifest
 // uses the `links:` block yet (grepped vxperiments/experiments/*.yaml,
-// 2026-07-19 — empty everywhere), so there's no live topology to mirror and
+// 2026-07-19, empty everywhere), so there's no live topology to mirror and
 // inventing a star/daisy-chain harness with no grounding would be exactly
 // the overclaiming this file's other notes are trying to avoid. Add it once
 // a real manifest exercises `links:`.
 //
 // Grounded, not invented: the two slices modeled here (adas, infotainment)
 // and their QoS numbers are copied verbatim from exp-001's live, frozen
-// manifest (vxperiments/experiments/exp-001.yaml) — the only slice
+// manifest (vxperiments/experiments/exp-001.yaml), the only slice
 // configuration this project has actually run and measured. No `services`,
 // `signal_plane`, `comms`, or `world` block is modeled yet: those are phase-3
 // / stretch schema fields with no built subsystem behind them yet
 // (vxota/vxtelemetry ship services already, but binding them into this
 // reference vehicle's structure is a separate, later addition once a real
-// vx-vehicle-01 experiment needs it — modeling it now would overclaim
+// vx-vehicle-01 experiment needs it; modeling it now would overclaim
 // readiness). centralCompute mirrors the manifest's `compute[]` slot only
 // structurally: vxcompute has zero code as of 2026-07-19 (docs/RESULTS.md),
 // so this is not a claim that Autoware/ROS2/CARLA run today.
@@ -54,7 +54,7 @@ package VxedgeVehicles {
 	}
 
 	abstract interface def AdasSliceInterface :> SliceInterface {
-		doc /* adas — URLLC-like, the H1/H2 measured slice. Vlan id + QoS copied
+		doc /* adas: URLLC-like, the H1/H2 measured slice. Vlan id + QoS copied
 		     verbatim from exp-001.yaml's live network.slices[0] (frozen result
 		     reference, results/exp-001). */
 		attribute :>> mode = SliceMode::vlan;
@@ -67,7 +67,7 @@ package VxedgeVehicles {
 	}
 
 	abstract interface def InfotainmentSliceInterface :> SliceInterface {
-		doc /* infotainment — best-effort load source. Vlan id + QoS copied
+		doc /* infotainment: best-effort load source. Vlan id + QoS copied
 		     verbatim from exp-001.yaml's live network.slices[1]. */
 		attribute :>> mode = SliceMode::vlan;
 		attribute :>> vlan = 103;
@@ -95,11 +95,11 @@ package VxedgeVehicles {
 	port def SlicePort {
 		doc /* A zone node's network.slice binding point (§6.1 zones[].nodes[].network).
 		     Concrete nodes are typed by one of the named subtypes below, not this
-		     one directly — the subtype IS the slice binding (`vxmodel render`
+		     one directly: the subtype IS the slice binding (`vxmodel render`
 		     reads the port's type name to pick `network[].slice`). Named
 		     subtypes rather than a binary `interface` connecting to a modeled
 		     gateway port: this file doesn't model vxgateway as a part (it's
-		     provisioned by `vxedge up`, not a zone — see the ZoneRoleKind doc),
+		     provisioned by `vxedge up`, not a zone; see the ZoneRoleKind doc),
 		     so there's no second endpoint to connect to. */
 	}
 
@@ -128,7 +128,7 @@ package VxedgeVehicles {
 
 	part def CentralComputeNode {
 		doc /* Containerized central compute (§9: Autoware/ROS2, GPU inference).
-		     Structural slot only — see the file header note on vxcompute's
+		     Structural slot only; see the file header note on vxcompute's
 		     current state. */
 		attribute gpu : String;
 	}
@@ -138,7 +138,7 @@ package VxedgeVehicles {
 	part def Vehicle {
 		doc /* A full software-bootstrapped SDV (§6.2 vehicle: block). Each zone
 		     gets its own named slot rather than four parts redefining a shared
-		     `zones[1..*]` feature — SysIDE 0.9.1 resolves a single redefinition
+		     `zones[1..*]` feature: SysIDE 0.9.1 resolves a single redefinition
 		     of a multiplicity feature fine but not multiple sibling
 		     redefinitions of the same one (found empirically authoring this
 		     file: only the first of four `part … :>> zones` usages resolved,
@@ -156,8 +156,8 @@ package VxedgeVehicles {
 	}
 
 	part vxVehicle01 : Vehicle {
-		doc /* vx-vehicle-01 — "OEM-representative zonal E/E" (§6.2's own example
-		     name). Not yet rendered to vxperiments/vehicles/vx-vehicle-01.yaml —
+		doc /* vx-vehicle-01: "OEM-representative zonal E/E" (§6.2's own example
+		     name). Not yet rendered to vxperiments/vehicles/vx-vehicle-01.yaml:
 		     the renderer (`vxmodel`) doesn't exist yet (M2, in progress). */
 		attribute :>> id = "vx-vehicle-01";
 		attribute :>> vehicleName = "vx-vehicle-01 OEM-representative zonal E/E";
@@ -192,7 +192,7 @@ package VxedgeVehicles {
 		part :>> rearRightZone : VehicleZone {
 			doc /* Rear cross-traffic ADAS sensor: rear zones legitimately carry
 			     ADAS-relevant sensing too (rear radar/camera), not just
-			     infotainment — this is a structural choice, not a measured one;
+			     infotainment; this is a structural choice, not a measured one;
 			     no experiment has exercised this zone yet. */
 			attribute :>> role = ZoneRoleKind::rearRight;
 			part adasProbeRr : ZoneNode :>> nodes {

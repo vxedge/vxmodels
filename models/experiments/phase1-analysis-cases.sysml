@@ -1,12 +1,12 @@
-// vxedge track M — M3 calibration set: the four phase-1 campaigns retro-modeled as
+// vxedge track M: M3 calibration set: the four phase-1 campaigns retro-modeled as
 // analysis cases. These are the worked examples future (including LLM-authored)
 // experiments are patterned on; the digest join keys and verdicts live in
-// VxedgeVerification (models/requirements/verification.sysml) — this file models the
+// VxedgeVerification (models/requirements/verification.sysml): this file models the
 // experiment *designs*: subject configuration, the varied dimension, the fixed frame.
 //
 // Variant rule (sysml-authoring skill): arms are values of an enumerated dimension,
 // never copy-pasted analysis cases. In SysML v2 an enum def IS a variation (its
-// literals are the variants), so dimension attributes are typed by the enum directly —
+// literals are the variants), so dimension attributes are typed by the enum directly;
 // wrapping them in a `variation` usage is illegal (a variation may not specialize
 // another variation; found empirically against SysIDE 0.9.1).
 
@@ -46,7 +46,7 @@ package VxedgePhase1Experiments {
 	attribute def CampaignFrame {
 		doc /* The fixed methodology frame every phase-1 campaign shares
 		     (experiment-methodology skill): repetitions, warmup, probe window,
-		     probe rate — identical across compared arms by construction. */
+		     probe rate: identical across compared arms by construction. */
 		attribute repetitions : Natural;
 		attribute warmupS : Natural;
 		attribute probeWindowS : Natural;
@@ -73,7 +73,7 @@ package VxedgePhase1Experiments {
 
 	analysis def Exp002PackagingComparison {
 		doc /* H3: identical probe path, packaging backend varied. One zone per arm
-		     since the 2026-07-13 single-arm retrofit — exactly one arm's zone is up
+		     since the 2026-07-13 single-arm retrofit: exactly one arm's zone is up
 		     during its measurement. */
 		attribute campaignFrame : CampaignFrame {
 			attribute :>> repetitions = 5;
