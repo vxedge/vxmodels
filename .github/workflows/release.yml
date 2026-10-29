@@ -7,7 +7,6 @@ on:
   push:
     tags: ["v[0-9]+.[0-9]+.[0-9]+"]
   workflow_dispatch:
-  pull_request: # TEMP dry run, reverted before merge
 
 # Nothing is granted by default; the publish job opts in to exactly what it needs.
 permissions: {}
