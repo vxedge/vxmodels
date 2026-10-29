@@ -56,7 +56,7 @@ legible in their vocabulary**. Every feature is judged against those four proper
 - `cargo deny` (advisories, licenses, sources) green everywhere; Dependabot on every repo.
 - Containers digest-pinned and non-root; OTA artifacts signed and verified (vxota).
 - No secrets in repos or manifests; anything credential-shaped goes through the environment.
-- License hygiene: MIT/Apache-2.0 for our code; never commit licensed vendor artifacts
+- License hygiene: MIT/Apache-2.0 for the project's code; never commit licensed vendor artifacts
   (QNX, AAOS) — recipes only.
 
 ## 6. Documentation currency (the adoption funnel)

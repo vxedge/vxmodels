@@ -4,8 +4,8 @@
 // verification.sysml; the join key between model and evidence is the experiment
 // manifest sha256, never a name.
 //
-// Terminology: this models an *executable virtual prototype*. The term "digital twin"
-// is reserved until phase-4 hardware parity (docs/ROADMAP.md terminology rule).
+// Terminology: this models an *executable virtual prototype*. The hardware-parity
+// term is reserved until phase 4 (docs/ROADMAP.md terminology rule).
 
 package VxedgeHypotheses {
 

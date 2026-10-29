@@ -85,11 +85,23 @@ fn parse_args() -> Result<Args, String> {
     // Subcommand: `vxmodel render ...` (the only one today).
     match args.next().as_deref() {
         Some("render") => {}
+        Some("--version" | "-V") => {
+            println!("vxmodel {}", env!("CARGO_PKG_VERSION"));
+            std::process::exit(0);
+        }
+        Some("--help" | "-h") => {
+            println!("{USAGE}");
+            std::process::exit(0);
+        }
         Some(other) => return Err(format!("unknown subcommand `{other}` (expected `render`)")),
         None => return Err(USAGE.to_string()),
     }
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "--help" | "-h" => {
+                println!("{USAGE}");
+                std::process::exit(0);
+            }
             "--vehicle" => {
                 vehicle = Some(PathBuf::from(args.next().ok_or("--vehicle needs a value")?));
             }

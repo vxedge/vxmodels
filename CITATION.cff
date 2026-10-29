@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "vxmodels: SysML v2 models and the model-to-manifest renderer of the vxedge testbed"
+type: software
+authors:
+  - family-names: "Djaafri"
+    given-names: "Fouzi"
+    affiliation: "Independent Researcher"
+repository-code: "https://github.com/vxedge/vxmodels"
+url: "https://vxedge.dev"
+version: "0.1.0"
+date-released: "2026-10-29"
+license: Apache-2.0
+keywords:
+  - sysml
+  - mbse
+  - software-defined-vehicle
+  - automotive
+  - testbed
+  - reproducible-research
+  - rust
+abstract: >-
+  vxmodels holds the SysML v2 models that govern vxedge (requirements H1-H4 with verification
+  links, vehicle E/E structure, experiments as analysis cases) and vxmodel, a Rust renderer that
+  turns them into vxedge workspace manifests, each gated by vxedge manifest validation. The model is
+  the design authority; manifests remain the only execution contract. It is not a general-purpose
+  SysML v2 toolchain. The Rust code is Apache-2.0; the SysML models and documentation are CC BY 4.0
+  (LICENSE-DOCS).
+references:
+  - type: software
+    title: "vxedge: specification and results of an all-software SDV network-slicing testbed"
+    authors:
+      - family-names: "Djaafri"
+        given-names: "Fouzi"
+    url: "https://github.com/vxedge/docs"
