@@ -215,10 +215,10 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     }
     println!(
-        "rendered {} -> {} (model-digest sha256:{:x})",
+        "rendered {} -> {} (model-digest sha256:{})",
         model_path.display(),
         args.out.display(),
-        digest
+        hex(digest)
     );
     ExitCode::SUCCESS
 }
@@ -242,6 +242,15 @@ fn check_missing_images(
         );
         Some(ExitCode::FAILURE)
     }
+}
+
+/// Lowercase hex of a digest. sha2 0.11's output no longer implements `LowerHex`.
+fn hex(bytes: impl AsRef<[u8]>) -> String {
+    use std::fmt::Write as _;
+    bytes.as_ref().iter().fold(String::new(), |mut out, b| {
+        let _ = write!(out, "{b:02x}");
+        out
+    })
 }
 
 /// Pattern-based extraction of the narrow `.sysml` subset this project's
@@ -750,7 +759,7 @@ mod render {
     }
 
     fn header(y: &mut String, digest: &Output<Sha256>) {
-        let _ = writeln!(y, "# model-digest: sha256:{digest:x}");
+        let _ = writeln!(y, "# model-digest: sha256:{}", super::hex(digest));
         let _ = writeln!(
             y,
             "# rendered by vxmodel from a .sysml source. Do not hand-edit: edit the model and re-render."
@@ -1004,6 +1013,15 @@ mod render {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn hex_matches_the_known_sha256_of_abc() {
+        use sha2::{Digest, Sha256};
+        assert_eq!(
+            super::hex(Sha256::digest(b"abc")),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+    }
+
     use super::*;
 
     #[test]
