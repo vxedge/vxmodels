@@ -20,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
-    # The crate lives in vxmodel/ with its own Cargo.lock and rust-toolchain.toml (1.96.1);
+    # The crate lives in vxmodel/ with its own Cargo.lock and rust-toolchain.toml (1.99.1);
     # rustup only picks that pin up when cargo runs from inside the directory.
     defaults:
       run:
