@@ -67,7 +67,7 @@ live in the same file it's rendered from; purely structural defs are fine to imp
 Images are a required, explicit CLI input, never invented; the model doesn't carry them
 by rule (§ below), and no real `vxparts` image exists yet for these nodes.
 `cd vxmodel && cargo build --locked / test / clippy --all-targets -- -D warnings / fmt --check
-/ deny check` (own `Cargo.lock`, `deny.toml` and `rust-toolchain.toml`, pinned 1.96.1 to match
+/ deny check` (own `Cargo.lock`, `deny.toml` and `rust-toolchain.toml`, pinned 1.99.1 to match
 `vxedge`'s). Releases: pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`, which
 publishes `vxmodels-<ver>-<target>.tar.gz` for x86_64 and aarch64 Linux with `SHA256SUMS` and
 build provenance; the tag must match the crate version.
