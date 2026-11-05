@@ -8,6 +8,7 @@ All notable changes to this repo are documented here. Format follows
 
 ### Changed
 
+- `sha2` 0.10 -> 0.11. Its digest output no longer formats with `{:x}`, so `vxmodel` hex-encodes the bytes itself. The rendered workspace, including the `# model-digest:` header, is byte-identical to the previous build's for the same model.
 - Lockfile update: the semver-compatible dependency updates `cargo update` offers (6 crates). No `Cargo.toml` change and no source change; build, test, clippy `-D warnings`, fmt and `cargo deny` pass.
 - The toolchain moves from Rust 1.96.1 to 1.99.1 (`rust-toolchain.toml`, `rust-version` 1.99.1). Build, test, clippy `-D warnings`, fmt and `cargo deny` pass unchanged; no source changes were needed.
 
