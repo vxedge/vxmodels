@@ -13,8 +13,8 @@ jobs:
       # Pinned toolchain (docs/TESTBED-SETUP.md Tier M): bump deliberately, digests first.
       SYSIDE_URL: https://github.com/sensmetry/sysml-2ls/releases/download/0.9.1/syside-languageserver.zip
       SYSIDE_SHA256: 1c3da42826d67b2a44b897515e068ad8ee0a038ec003a06659427ed77f3af8d2
-      STDLIB_URL: https://github.com/Systems-Modeling/SysML-v2-Release/archive/refs/tags/2026-04.tar.gz
-      STDLIB_SHA256: 44996ee207eb41e4ceadc242c76d23505764d0698c3e3c7a22f0ed80517a7bdd
+      STDLIB_URL: https://github.com/Systems-Modeling/SysML-v2-Release/archive/refs/tags/2026-09.1.tar.gz
+      STDLIB_SHA256: 00efd27eab7aacb1a2aa57bad37eda52da3f0ece4137998196bdd8a70734d2a2
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
@@ -35,7 +35,7 @@ jobs:
           files=(models/**/*.sysml)
           [ ${#files[@]} -gt 0 ] || { echo "error: no .sysml files found"; exit 1; }
           SYSIDE_JS="$PWD/.tools/syside-languageserver.js" \
-          SYSML_STDLIB="$PWD/.tools/SysML-v2-Release-2026-04/sysml.library" \
+          SYSML_STDLIB="$PWD/.tools/SysML-v2-Release-2026-09.1/sysml.library" \
           node scripts/validate-sysml.mjs "${files[@]}"
 
   rust:
