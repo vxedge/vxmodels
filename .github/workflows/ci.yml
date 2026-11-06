@@ -16,7 +16,7 @@ jobs:
       STDLIB_URL: https://github.com/Systems-Modeling/SysML-v2-Release/archive/refs/tags/2026-04.tar.gz
       STDLIB_SHA256: 44996ee207eb41e4ceadc242c76d23505764d0698c3e3c7a22f0ed80517a7bdd
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -45,7 +45,7 @@ jobs:
       run:
         working-directory: vxmodel
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
@@ -72,7 +72,7 @@ jobs:
     name: cargo-deny (advisories, licenses, sources)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           manifest-path: vxmodel/Cargo.toml
@@ -98,11 +98,11 @@ jobs:
     # so without that the job would pass on a renderer that regressed to them.
     steps:
       - name: Checkout vxmodels
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: vxmodels
       - name: Checkout vxedge (sibling repo, read-only)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: vxedge/vxedge
           path: vxedge
