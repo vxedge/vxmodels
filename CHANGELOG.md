@@ -8,6 +8,7 @@ All notable changes to this repo are documented here. Format follows
 
 ### Changed
 
+- CI validates the models against the SysML v2 standard library from SysML-v2-Release 2026-09.1 (was 2026-04); the tarball sha256 pin moves with it.
 - CI uses `actions/checkout@v7`, the major this repo's other workflows already run, instead of v4.
 - `sha2` 0.10 -> 0.11. Its digest output no longer formats with `{:x}`, so `vxmodel` hex-encodes the bytes itself. The rendered workspace, including the `# model-digest:` header, is byte-identical to the previous build's for the same model.
 - Lockfile update: the semver-compatible dependency updates `cargo update` offers (6 crates). No `Cargo.toml` change and no source change; build, test, clippy `-D warnings`, fmt and `cargo deny` pass.

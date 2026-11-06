@@ -14,7 +14,7 @@
 //   node scripts/validate-sysml.mjs models/**/*.sysml
 //
 // Pinned toolchain (docs/TESTBED-SETUP.md Tier M): SysIDE 0.9.1,
-// SysML-v2-Release 2026-04 sysml.library.
+// SysML-v2-Release 2026-09.1 sysml.library.
 
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
