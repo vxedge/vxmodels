@@ -15,7 +15,7 @@ rules). The model is the design authority; manifests remain the sole execution c
 | a hypothesis or requirement | `requirement` def + `verify` | frozen result archive (manifest digest is the join key) |
 | E/E structure (zones, nodes, harness, slices) | `part` / `connection` / `interface` defs | vehicle manifest (§6.2) |
 | an experiment and its arms | `analysis case` + variant points | experiment manifest (§6.1) |
-| a traffic/transportation scenario | `use case` / `occurrence` | CARLA scenario (ASAM OpenSCENARIO alignment, M4) |
+| a traffic/transportation scenario | `use case` / `occurrence` | CARLA scenario (ASAM OpenSCENARIO alignment) |
 | a fidelity caveat | metadata annotation on the part | validity envelope in the rendered experiment |
 
 Anything with no row here is out of model scope by rule: Rust internals, the vxAPI IDL,
@@ -50,12 +50,12 @@ images/node IDs (zone/compute manifests own those; reference them, never restate
 - **Traceability is bidirectional by digest**: a `verify` link carries the archive's
   manifest sha256; a rendered manifest carries the model digest. Never link by name only.
 - **Terminology**: model comments and doc strings say *executable virtual prototype*;
-  "digital twin" is reserved until phase-4 hardware parity (`docs/ROADMAP.md`).
+  "digital twin" is reserved for hardware-in-the-loop parity.
 
 ## The double gate (non-negotiable, especially for generated models)
 
 1. **Model typing**: the `.sysml` source must parse and type-check clean (SysIDE / pilot
-   implementation; CI parse job once it exists).
+   implementation; the CI parse job runs it on every push and PR).
 2. **Manifest validation**: `vxmodel render … && vxedge manifest validate --json <out>`.
    Render failure or validation failure means the model is wrong: fix the model, never
    hand-edit the rendered output.
@@ -65,7 +65,7 @@ There is no third path.
 
 ## Verification loop
 
-- Parse/type check on every model edit (editor LSP; CI job per `vxmodels/TASKS.md` M1).
+- Parse/type check on every model edit (editor LSP; the CI parse job).
 - Render + validate round-trip for anything that renders (M2+).
 - Where a hand-written manifest counterpart exists, diff against it and explain every
   difference: silent divergence between model and manifest is a bug in one of them.

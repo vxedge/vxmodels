@@ -145,7 +145,7 @@ jobs:
       # workspace. The renderer emits no `.vxp`, so a rendered workspace cannot currently be
       # addressed by `vxedge experiment up|validate` at all; a green run here means "the
       # renderer emits well-formed documents", not "the pipeline works end to end". Known
-      # limitation, deferred to phase 3, recorded in TASKS.md.
+      # limitation.
       - name: Render + validate exp-pipeline-demo (M3 path)
         working-directory: vxmodels
         run: |

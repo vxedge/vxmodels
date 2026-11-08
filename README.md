@@ -71,7 +71,7 @@ vxedge manifest validate --manifest rendered/exp-pipeline-demo.yaml --json
 
 - Site: <https://vxedge.dev>
 - Architecture: [`docs/ARCHITECTURE.md`](https://github.com/vxedge/docs/blob/main/ARCHITECTURE.md) · Facts: [`docs/FACTS.md`](https://github.com/vxedge/docs/blob/main/FACTS.md)
-- Results: [`docs/RESULTS.md`](https://github.com/vxedge/docs/blob/main/RESULTS.md) · Roadmap: [`docs/ROADMAP.md`](https://github.com/vxedge/docs/blob/main/ROADMAP.md)
+- Results: [`docs/RESULTS.md`](https://github.com/vxedge/docs/blob/main/RESULTS.md)
 - Contributing: [CONTRIBUTING](https://github.com/vxedge/.github/blob/main/CONTRIBUTING.md) · Security: [SECURITY.md](SECURITY.md) · Changelog: [CHANGELOG.md](CHANGELOG.md) · Cite: [CITATION.cff](CITATION.cff)
 
 ## License

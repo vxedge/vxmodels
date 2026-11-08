@@ -11,8 +11,8 @@
 // manifest shape. Re-deriving exp-010.yaml from a grown model would mean
 // touching frozen H2 evidence (verdict: HOLDS, docs/RESULTS.md) is out of scope
 // here by workspace rule. Building a general renderer that also handles that
-// methodology-only shape is a separate, larger design question, left open in
-// vxmodels/TASKS.md M3 rather than solved by this file.
+// methodology-only shape is a separate, larger design question that this file does
+// not solve.
 //
 // So: this analysis case is scoped like vx-vehicle-01.sysml was for M2: a
 // small, purpose-built, fully self-contained model, 1:1 with the manifest

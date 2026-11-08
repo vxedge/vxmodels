@@ -35,8 +35,7 @@
 //! `exp-010-h2-real-slicing.sysml` (those model a varied dimension and a
 //! campaign frame, not a topology); rendering that second shape, and how an
 //! open variant dimension collapses to one concrete manifest, is a separate,
-//! larger design question left open in `vxmodels/TASKS.md` M3, not solved
-//! here.
+//! larger design question this renderer does not solve.
 //!
 //! Images are deliberately NOT modeled in `.sysml` (sysml-authoring skill:
 //! "images/node IDs: zone/compute manifests own those, reference them,
@@ -49,9 +48,8 @@
 //! recorded as a `# model-digest: sha256:...` YAML comment header, not a
 //! field: no §6.0 document has one, and adding it is a schema change that
 //! needs ARCHITECTURE.md sign-off first (workspace CLAUDE.md hard rule), not
-//! something this renderer decides unilaterally. The `.vxp` package
-//! descriptor is the natural home for it and is where that decision should
-//! land; tracked in `vxmodels/TASKS.md`.
+//! something this renderer decides unilaterally. The renderer emits
+//! no `.vxp` package descriptor, so the digest stays a comment.
 
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
