@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "vxmodels: SysML v2 models and the model-to-manifest renderer of the vxedge testbed"
+title: "vxmodels: SysML v2 models and the model-to-manifest renderer of vxedge"
 type: software
 authors:
   - family-names: "Djaafri"
@@ -29,7 +29,7 @@ abstract: >-
   (LICENSE-DOCS).
 references:
   - type: software
-    title: "vxedge: specification and results of an all-software SDV network-slicing testbed"
+    title: "vxedge: specification and results of a virtual vehicle with environmental parity"
     authors:
       - family-names: "Djaafri"
         given-names: "Fouzi"

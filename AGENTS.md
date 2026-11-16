@@ -18,6 +18,14 @@ GenAI double gate), §4 (single-source rules), §15 track M.
 
 ## Hard rules
 
+- **Branch names use the `vx/` prefix**, for example `vx/fix-probe-drift`. Never name a branch after a
+  tool or vendor. Delete a branch once its PR is merged.
+- **Merge only after formal checks.** Before a PR is merged: its CI is green on the PR head; the SysML parse/type gate
+  and the `vxmodel` cargo commands under Tooling
+  ran clean locally; and the diff was re-read for claims beyond `docs/FACTS.md`, host details and
+  personal or private material. A failing check blocks the merge; never skip, weaken or disable one.
+- **Describe vxedge with `project.summary` from `docs/FACTS.md`** (the README's first lines quote it).
+  Do not write another description of vxedge; 5G slicing is one family of its measured cases.
 - **The model is the design authority; manifests remain the sole execution contract.**
   The daemon/CLI never read models. Every rendered manifest must pass
   `vxedge manifest validate --json`; the render pipeline fails on validation failure.

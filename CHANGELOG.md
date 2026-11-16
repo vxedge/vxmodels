@@ -8,6 +8,10 @@ All notable changes to this repo are documented here. Format follows
 
 ### Changed
 
+- vxedge is described as a virtual vehicle with environmental parity, for packaged, measured SDV experiments;
+  5G slicing is one family of its measured cases. `README.md` and the `CITATION.cff` title use the
+  wording registered in `docs/FACTS.md` (`project.summary`, `project.description`). No identifier, API or
+  result changes.
 - CI validates the models against the SysML v2 standard library from SysML-v2-Release 2026-09.1 (was 2026-04); the tarball sha256 pin moves with it.
 - CI uses `actions/checkout@v7`, the major this repo's other workflows already run, instead of v4.
 - `sha2` 0.10 -> 0.11. Its digest output no longer formats with `{:x}`, so `vxmodel` hex-encodes the bytes itself. The rendered workspace, including the `# model-digest:` header, is byte-identical to the previous build's for the same model.
